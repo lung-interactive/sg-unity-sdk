@@ -1,0 +1,29 @@
+{
+  "name": "com.bravestremers.sg-unity-sdk",
+  "version": "1.0.1",
+  "displayName": "StreamingGames Unity SDK",
+  "description": "A Unity package for the StreamingGames Unity SDK.",
+  "unity": "6000.1",
+  "unityRelease": "9f1",
+  "dependencies": {
+    "com.itisnajim.socketiounity": "^1.1.5",
+    "com.veriorpies.parrelsync": "^1.5.2",
+    "com.indiegabo.hms-unity-sdk": "^1.1.1"
+  },
+  "documentationUrl": "https://bravestreamers.github.io/sg-unity-sdk",
+  "changelogUrl": "https://bravestreamers.github.io/sg-unity-sdk/documentation/CHANGELOG.html",
+  "licensesUrl": "https://github.com/bravestreamers/sg-unity-sdk/blob/main/LICENSE.md",
+  "author": {
+    "name": "bravestreamers",
+    "email": "bravestreamers@gmail.com",
+    "url": "http://github.com/bravestreamers"
+  },
+  "keywords": [
+    "sg",
+    "multiplayer",
+    "editor",
+    "bravestreamers",
+    "streaming-games",
+    "streaming"
+  ]
+}

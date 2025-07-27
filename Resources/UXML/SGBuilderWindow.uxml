@@ -1,0 +1,61 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <Style src="project://database/Assets/_ExternalDevelopment/SGUnitySDK/Resources/Styles/Common_style.uss?fileID=7433441132597879392&amp;guid=6f1cf7892ff31374fbc43ebe464e850e&amp;type=3#Common_style" />
+    <ui:TabView name="container-main" style="flex-shrink: 0; flex-grow: 1;">
+        <ui:Tab label="Versioning" name="tab-versioning" data-source="project://database/Assets/_Scripts/External%20Development/SGUnitySDK/Resources/SGResources/SGConfig.asset?fileID=11400000&amp;guid=f2fd197f9c702664ea386a85b7a8d2c2&amp;type=2#SGConfig" data-source-path="_buildProfiles" style="flex-shrink: 0; flex-grow: 1; height: 100%;">
+            <ui:VisualElement name="container-versioning" style="flex-grow: 1; margin-top: 5px; margin-right: 5px; margin-bottom: 5px; margin-left: 5px;">
+                <ui:VisualElement name="container-versions" style="flex-grow: 1; background-color: rgb(29, 29, 29); border-top-left-radius: 5px; border-top-right-radius: 5px; border-bottom-right-radius: 5px; border-bottom-left-radius: 5px; align-items: stretch; justify-content: flex-start; padding-top: 5px; padding-right: 5px; padding-bottom: 5px; padding-left: 5px; margin-bottom: 5px;">
+                    <ui:VisualElement name="container-versions" style="flex-grow: 1; flex-direction: row; align-items: center; justify-content: space-between;">
+                        <ui:VisualElement name="container-version-local" style="flex-grow: 1; flex-direction: row; align-items: center;">
+                            <ui:Label text="Local:" style="padding-right: 5px; -unity-font-style: bold; font-size: 10px;" />
+                            <ui:Label text="0.1.0" name="label-version-local" style="font-size: 9px;" />
+                        </ui:VisualElement>
+                        <ui:VisualElement name="container-version-remote" style="flex-grow: 1; flex-direction: row; align-items: center; justify-content: flex-end;">
+                            <ui:Label text="Remote:" style="padding-right: 5px; -unity-font-style: bold; font-size: 10px;" />
+                            <ui:Label text="0.0.1" name="label-version-remote" style="font-size: 9px;" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement name="container-process" style="flex-grow: 1; background-color: rgb(29, 29, 29); border-top-left-radius: 5px; border-top-right-radius: 5px; border-bottom-right-radius: 5px; border-bottom-left-radius: 5px; align-items: stretch; justify-content: flex-start; padding-top: 5px; padding-right: 5px; padding-bottom: 5px; padding-left: 5px; margin-bottom: 5px; display: flex;">
+                    <ui:VisualElement name="container-bar" style="flex-grow: 1; flex-direction: row; align-items: center; justify-content: space-between;">
+                        <ui:Button text="Previous" name="button-previous" />
+                        <ui:Button text="Next" name="button-next" />
+                    </ui:VisualElement>
+                    <ui:VisualElement name="container-steps" style="flex-grow: 1; padding-top: 5px; padding-bottom: 0;" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:Tab>
+        <ui:Tab label="Config" name="tab-config" style="width: auto; flex-shrink: 0; flex-grow: 1; height: 100%;">
+            <ui:VisualElement name="container-config" style="flex-grow: 1; min-width: 300px;">
+                <ui:VisualElement name="container-config-header" class="container" style="flex-grow: 0; background-color: rgb(29, 29, 29); flex-direction: row; align-items: center; justify-content: space-between;">
+                    <ui:Label text="SG Configuration" style="font-size: 14px; -unity-font-style: bold; -unity-text-align: middle-left; border-bottom-width: 0; border-left-color: rgb(192, 192, 192); border-right-color: rgb(192, 192, 192); border-top-color: rgb(192, 192, 192); border-bottom-color: rgba(113, 113, 113, 0.67); margin-top: 0; padding-bottom: 0; margin-bottom: 0;" />
+                </ui:VisualElement>
+                <ui:VisualElement name="container-config-body" style="flex-grow: 1; padding-top: 5px; padding-right: 5px; padding-bottom: 5px; padding-left: 5px;">
+                    <ui:VisualElement name="container-forms-wrapper" style="flex-grow: 1; background-color: rgb(29, 29, 29); border-top-left-radius: 5px; border-top-right-radius: 5px; border-bottom-right-radius: 5px; border-bottom-left-radius: 5px; align-items: stretch; justify-content: flex-start; padding-top: 5px; padding-right: 5px; padding-bottom: 5px; padding-left: 5px;">
+                        <ui:Label text="API" class="label-header" />
+                        <ui:VisualElement name="container-token" style="flex-grow: 1; flex-direction: column; -unity-text-align: middle-left; padding-bottom: 5px; margin-top: 5px;">
+                            <ui:Label text="Game Management Token" name="label-token-label" style="-unity-font-style: bold; margin-bottom: 5px;" />
+                            <ui:TextField name="field-game-management-token" multiline="true" vertical-scroller-visibility="Auto" enabled="true" placeholder-text="The Game management token acquired in the Streaming Games Admin system." class="text-area" style="flex-grow: 1; margin-left: 0; margin-right: 0;" />
+                        </ui:VisualElement>
+                        <ui:VisualElement name="container-base-url" style="flex-grow: 1; flex-direction: column; -unity-text-align: middle-left; padding-top: 5px; padding-bottom: 5px;">
+                            <ui:Label text="Base URL" name="label-token-label" style="-unity-font-style: bold; margin-bottom: 5px;" />
+                            <ui:Toggle label="Override?" name="field-should-override-base-url" style="margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-bottom: 3px;" />
+                            <ui:TextField label="URL" placeholder-text="The Base URL to override the default one" name="field-base-url-override" style="margin-top: 0; margin-right: 0; margin-bottom: 3px; margin-left: 0;" />
+                        </ui:VisualElement>
+                        <ui:VisualElement name="container-builds" style="flex-grow: 1; padding-top: 5px; padding-bottom: 5px;">
+                            <ui:Label text="Builds" class="label-header" />
+                            <ui:VisualElement style="flex-grow: 1;">
+                                <ui:Label text="Setups" name="label-setups" style="-unity-font-style: bold; margin-bottom: 5px;" />
+                                <ui:ListView show-add-remove-footer="true" reorderable="true" reorder-mode="Animated" show-bound-collection-size="false" show-border="true" name="list-build-profiles" />
+                            </ui:VisualElement>
+                            <ui:VisualElement name="container-builds-directory" style="flex-grow: 1;">
+                                <ui:Label text="Output" name="label-outputs" style="-unity-font-style: bold; margin-bottom: 5px;" />
+                                <ui:TextField placeholder-text="The directory where zipped files will be stored" name="field-builds-directory" style="margin-top: 0; margin-right: 0; margin-bottom: 3px; margin-left: 0; padding-top: 0; padding-bottom: 0; padding-right: 0; padding-left: 0;" />
+                                <ui:Button text="Change" name="button-define-builds-directory" />
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:Tab>
+    </ui:TabView>
+</ui:UXML>

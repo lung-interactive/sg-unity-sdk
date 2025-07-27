@@ -1,0 +1,10 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="True">
+    <Style src="project://database/Assets/_ExternalDevelopment/SGUnitySDK/Resources/Styles/Common_style.uss?fileID=7433441132597879392&amp;guid=6f1cf7892ff31374fbc43ebe464e850e&amp;type=3#Common_style" />
+    <ui:TabView name="tab-view-runtime-panel" style="flex-grow: 0; min-height: 0; height: 100%;">
+        <ui:Tab label="Crowd Actions" name="tab-crowd-actions" style="flex-grow: 1; height: auto;">
+            <ui:ScrollView style="flex-grow: 1;">
+                <SGUnitySDK.Editor.CrowdActionsViewElement enabled="true" usage-hints="None" tabindex="0" focusable="false" language-direction="Inherit" />
+            </ui:ScrollView>
+        </ui:Tab>
+    </ui:TabView>
+</ui:UXML>

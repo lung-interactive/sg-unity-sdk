@@ -1,0 +1,20 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <Style src="project://database/Assets/_ExternalDevelopment/SGUnitySDK/Resources/Styles/Common_style.uss?fileID=7433441132597879392&amp;guid=6f1cf7892ff31374fbc43ebe464e850e&amp;type=3#Common_style" />
+    <ui:VisualElement name="container-main" style="flex-grow: 0; flex-direction: row; align-items: center; border-top-width: 1px; border-right-width: 1px; border-bottom-width: 1px; border-left-width: 1px; border-top-left-radius: 5px; border-top-right-radius: 5px; border-bottom-right-radius: 5px; border-bottom-left-radius: 5px; border-left-color: rgb(84, 84, 84); border-right-color: rgb(84, 84, 84); border-top-color: rgb(84, 84, 84); border-bottom-color: rgb(84, 84, 84);">
+        <ui:VisualElement name="container-identifier" style="flex-grow: 0; padding-top: 5px; padding-right: 5px; padding-bottom: 5px; padding-left: 5px; width: 33.33%;">
+            <ui:Label text="Key" style="margin-bottom: 3px;" />
+            <ui:TextField name="field-key" style="margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0;" />
+        </ui:VisualElement>
+        <ui:VisualElement name="container-type" style="flex-grow: 0; padding-top: 5px; padding-right: 5px; padding-bottom: 5px; padding-left: 5px; width: 33.33%;">
+            <ui:Label text="Type" style="margin-bottom: 3px;" />
+            <ui:EnumField value="None" type="SGUnitySDK.ArgumentType, SGUnitySDK.Runtime" name="field-type" />
+        </ui:VisualElement>
+        <ui:VisualElement name="container-value" style="flex-grow: 0; padding-top: 5px; padding-right: 5px; padding-bottom: 5px; padding-left: 5px; width: 33.33%;">
+            <ui:Label text="Value" style="margin-bottom: 3px;" />
+            <ui:TextField name="field-value-string" style="margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0;" />
+            <ui:IntegerField value="0" name="field-value-integer" style="margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0;" />
+            <ui:FloatField value="0" name="field-value-float" style="margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0;" />
+            <ui:Toggle name="toggle-value-boolean" style="margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0;" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

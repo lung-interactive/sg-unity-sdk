@@ -1,0 +1,20 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <Style src="project://database/Assets/_ExternalDevelopment/SGUnitySDK/Resources/Styles/Common_style.uss?fileID=7433441132597879392&amp;guid=6f1cf7892ff31374fbc43ebe464e850e&amp;type=3#Common_style" />
+    <ui:VisualElement name="container-main" style="flex-grow: 0; flex-direction: column; align-items: stretch; border-top-left-radius: 5px; border-top-right-radius: 5px; border-bottom-right-radius: 5px; border-bottom-left-radius: 5px; border-left-color: rgb(84, 84, 84); border-right-color: rgb(84, 84, 84); border-top-color: rgb(84, 84, 84); border-bottom-color: rgb(84, 84, 84);">
+        <ui:VisualElement name="container-agent" style="flex-grow: 1; padding-top: 5px; padding-right: 5px; padding-bottom: 5px; padding-left: 5px;">
+            <ui:Label text="Agent" style="margin-bottom: 3px;" />
+            <ui:TextField name="field-agent" style="margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0;" />
+        </ui:VisualElement>
+        <ui:VisualElement name="container-platform" style="flex-grow: 1; padding-top: 5px; padding-right: 5px; padding-bottom: 5px; padding-left: 5px; margin-top: 0;">
+            <ui:Label text="Platform" style="margin-bottom: 3px;" />
+            <ui:EnumField value="Center" type="SGUnitySDK.Editor.CrowdActionMetadataElement+Platform, SGUnitySDK.Editor" name="field-platform" style="margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0;" />
+        </ui:VisualElement>
+        <ui:VisualElement name="container-additional-values" style="flex-grow: 1; padding-top: 5px; padding-right: 5px; padding-bottom: 5px; padding-left: 5px; margin-top: 5px;">
+            <ui:Label text="Additional Values" class="label-header" />
+            <ui:VisualElement name="container-buttons" style="flex-grow: 1; flex-direction: row; justify-content: flex-end;">
+                <ui:Button text="Add" name="button-add-additional-value" />
+            </ui:VisualElement>
+            <ui:VisualElement name="container-values" style="flex-grow: 1; border-top-left-radius: 5px; border-top-right-radius: 5px; border-bottom-right-radius: 5px; border-bottom-left-radius: 5px; border-left-color: rgb(113, 113, 113); border-right-color: rgb(113, 113, 113); border-top-color: rgb(113, 113, 113); border-bottom-color: rgb(113, 113, 113); background-color: rgb(48, 48, 48); margin-top: 5px; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-top: 5px; padding-right: 5px; padding-bottom: 5px; padding-left: 5px; min-height: 50px;" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

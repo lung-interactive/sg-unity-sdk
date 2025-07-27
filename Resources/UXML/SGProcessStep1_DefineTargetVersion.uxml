@@ -1,0 +1,16 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <Style src="project://database/Assets/_ExternalDevelopment/SGUnitySDK/Resources/Styles/Common_style.uss?fileID=7433441132597879392&amp;guid=6f1cf7892ff31374fbc43ebe464e850e&amp;type=3#Common_style" />
+    <ui:Label text="Step 1 - Defining Target Version" class="label-header" />
+    <ui:VisualElement name="container-state-defining" style="flex-grow: 0;">
+        <ui:EnumField label="Increment Type" value="Center" type="SGUnitySDK.Editor.VersionUpdateType, SGUnitySDK.Editor" name="field-increment-version-type" />
+        <ui:TextField label="Custom Version" name="field-custom-version" />
+        <ui:Button text="Define" name="button-define" enable-rich-text="true" />
+    </ui:VisualElement>
+    <ui:VisualElement name="container-state-result" style="flex-grow: 0;">
+        <ui:VisualElement name="container-result-label" style="flex-grow: 1; margin-top: 5px; margin-right: 5px; margin-bottom: 5px; margin-left: 5px; flex-direction: row; justify-content: flex-end;">
+            <ui:Label text="Target Version:" name="Label" style="padding-left: 0; padding-right: 0;" />
+            <ui:Label text="Label" name="label-target-version" style="padding-left: 0; padding-right: 0; margin-left: 5px; -unity-font-style: bold;" />
+        </ui:VisualElement>
+        <ui:Button text="Rollback" name="button-rollback" />
+    </ui:VisualElement>
+</ui:UXML>
