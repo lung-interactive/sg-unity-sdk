@@ -1,1 +1,1 @@
-# HMS Unity SDK
+# SG Unity SDK
