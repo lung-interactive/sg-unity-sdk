@@ -98,13 +98,13 @@ namespace SGUnitySDK.Editor
 
         #endregion
 
-        [MenuItem("Streaming Games/Reset Config")]
+        [MenuItem("Tools/SGUnitySDK/Config/Reset Config")]
         private static void StaticResetConfig()
         {
             instance.ResetConfig();
         }
 
-        [MenuItem("Streaming Games/Reset Versioning Process")]
+        // [MenuItem("Tools/SGUnitySDK/Config/Reset Versioning Process")]
         private static void StaticResetVersioningProcess()
         {
             instance.ResetVersioningProcess();

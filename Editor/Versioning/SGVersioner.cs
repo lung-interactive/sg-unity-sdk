@@ -23,7 +23,7 @@ namespace SGUnitySDK.Editor.Versioning
             public SemanticVersionUpdater.VersionIncrementReport versionReport;
         }
 
-        [MenuItem("Streaming Games/Versionate and send to remote", false, 0)]
+        [MenuItem("Tools/SGUnitySDK/Versioning/Versionate and send to remote", false, 0)]
         public static void StartVersioningProcess()
         {
             _ = PerformVersioningProcess();

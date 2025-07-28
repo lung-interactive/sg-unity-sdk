@@ -8,20 +8,20 @@ using System;
 
 namespace SGUnitySDK.Editor
 {
-    public class SGVersionerWindow : EditorWindow
+    public class SGConfigWindow : EditorWindow
     {
         #region Static
 
-        private static readonly string TemplateName = "SGBuilderWindow";
-        private static SGVersionerWindow _window;
+        private static readonly string TemplateName = "SGConfigWindow";
+        private static SGConfigWindow _window;
 
-        [MenuItem("Tools/SGUnitySDK/Versioning/Versioner Window", false, 0)]
+        [MenuItem("Tools/SGUnitySDK/Config/Config Panel", false, 0)]
         public static void ShowWindow()
         {
             if (_window == null)
             {
-                _window = GetWindow<SGVersionerWindow>();
-                _window.titleContent = new GUIContent("Versioner");
+                _window = GetWindow<SGConfigWindow>();
+                _window.titleContent = new GUIContent("Streaming Games Configuration");
                 _window.minSize = new Vector2(400, 300);
             }
             else
@@ -38,15 +38,6 @@ namespace SGUnitySDK.Editor
 
         // Elements
         private TemplateContainer _containerMain;
-
-        // Tab View
-        private TabView _tabView;
-
-        // Versioning
-        private Label _labelVersionLocal;
-        private Label _labelVersionRemote;
-
-        private VersioningSectionManager _versioningSectionElement;
 
         // CONFIG FIELDS
         private TextField _fieldGameManagementToken;
@@ -72,21 +63,6 @@ namespace SGUnitySDK.Editor
             _serializedConfig = new SerializedObject(SGEditorConfig.instance);
             _containerMain = Resources.Load<VisualTreeAsset>($"UXML/{TemplateName}").CloneTree();
             _containerMain.style.flexGrow = 1;
-
-            _tabView = _containerMain.Q<TabView>("container-main");
-            int lastActiveTabIndex = EditorPrefs.GetInt("SGBuilderWindow_LastActiveTab", 0);
-            _tabView.selectedTabIndex = lastActiveTabIndex;
-            _tabView.activeTabChanged += (old, current) =>
-            {
-                EditorPrefs.SetInt("SGBuilderWindow_LastActiveTab", _tabView.selectedTabIndex);
-            };
-
-            // Versioning
-            _labelVersionLocal = _containerMain.Q<Label>("label-version-local");
-            _labelVersionRemote = _containerMain.Q<Label>("label-version-remote");
-
-            var containerProcess = _containerMain.Q<VisualElement>("container-process");
-            _versioningSectionElement = new VersioningSectionManager(containerProcess);
 
             // Config
             _fieldGameManagementToken = _containerMain.Q<TextField>("field-game-management-token");
@@ -114,7 +90,6 @@ namespace SGUnitySDK.Editor
 
             EvaluateBaseURLDisplay(Config.ShouldOverrideBaseURL);
 
-            _ = FetchVersions();
             rootVisualElement.Add(_containerMain);
         }
 
@@ -208,56 +183,6 @@ namespace SGUnitySDK.Editor
         private void SelectBuildsDirectory(ChangeEvent<string> evt)
         {
             Config.SetBuildsDirectory(evt.newValue);
-        }
-
-        #endregion
-
-        #region Requests
-
-        private async Awaitable FetchVersions()
-        {
-            var localVersion = PlayerSettings.bundleVersion;
-            _labelVersionLocal.text = "-";
-            _labelVersionRemote.text = "-";
-            try
-            {
-                var response = await GameManagementRequest.To("version").SendAsync();
-                var remoteVersion = response.ReadBodyData<VersionDTO>();
-                _labelVersionLocal.text = localVersion;
-                if (remoteVersion != null && remoteVersion.Semver != null)
-                {
-                    _labelVersionRemote.text = remoteVersion.Semver;
-                }
-                else
-                {
-                    _labelVersionRemote.text = "N/A";
-                }
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogException(e);
-            }
-        }
-
-        private async Awaitable SendVersionToServer()
-        {
-            try
-            {
-                var response = await GameManagementRequest.To("start-new-version").SendAsync();
-                var remoteVersion = response.ReadBodyData<VersionDTO>();
-                if (remoteVersion != null && remoteVersion.Semver != null)
-                {
-                    _labelVersionRemote.text = remoteVersion.Semver;
-                }
-                else
-                {
-                    _labelVersionRemote.text = "N/A";
-                }
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogException(e);
-            }
         }
 
         #endregion

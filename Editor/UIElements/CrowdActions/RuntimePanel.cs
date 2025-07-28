@@ -10,7 +10,7 @@ namespace SGUnitySDK.Editor
     public class RuntimePanel : EditorWindow
     {
         private static readonly string TemplatePath = "RuntimePanel";
-        [MenuItem("Streaming Games/RuntimePanel")]
+        [MenuItem("Tools/SGUnitySDK/RuntimePanel", false, 0)]
         public static void ShowWindow()
         {
             var window = GetWindow<RuntimePanel>();
