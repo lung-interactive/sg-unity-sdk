@@ -16,7 +16,6 @@ namespace SGUnitySDK
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Bootstrap()
         {
-
         }
     }
 }
