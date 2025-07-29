@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using SGUnitySDK.Editor.Utils;
 using System.Threading.Tasks;
+using HMSUnitySDK;
 
 namespace SGUnitySDK.Editor.Versioning
 {
@@ -23,6 +24,8 @@ namespace SGUnitySDK.Editor.Versioning
             public SemanticVersionUpdater.VersionIncrementReport versionReport;
         }
 
+        private static HMSRuntimeProfile _originalRuntimeProfile;
+
         [MenuItem("Tools/SGUnitySDK/Versioning/Versionate and send to remote", false, 0)]
         public static void StartVersioningProcess()
         {
@@ -33,6 +36,9 @@ namespace SGUnitySDK.Editor.Versioning
         {
             var state = new ReleaseState();
             SGVersionLogger.Initialize();
+            var hmsRuntimeInfo = HMSRuntimeInfo.GetFromResources();
+            _originalRuntimeProfile = hmsRuntimeInfo.Profile;
+            hmsRuntimeInfo.SetProfile(SGEditorConfig.instance.RuntimeProfile);
 
             try
             {
@@ -438,6 +444,10 @@ namespace SGUnitySDK.Editor.Versioning
         private static async Awaitable FinalCleanup()
         {
             SGVersionLogger.Log("Performing final cleanup...");
+
+            var hmsRuntimeInfo = HMSRuntimeInfo.GetFromResources();
+            hmsRuntimeInfo.SetProfile(_originalRuntimeProfile);
+
             try
             {
                 string currentBranch = GitExecutor.GetCurrentBranch();
@@ -452,6 +462,7 @@ namespace SGUnitySDK.Editor.Versioning
 
                 SGVersionLogger.Log("Discarding any remaining changes");
                 GitExecutor.DiscardAllChanges();
+
                 await Task.CompletedTask;
             }
             catch (Exception ex)
@@ -504,6 +515,9 @@ namespace SGUnitySDK.Editor.Versioning
             SGVersionLogger.Log("Starting rollback process...");
             try
             {
+                var hmsRuntimeInfo = HMSRuntimeInfo.GetFromResources();
+                hmsRuntimeInfo.SetProfile(_originalRuntimeProfile);
+
                 if (state.versionUpdatedLocally && !string.IsNullOrEmpty(state.originalVersion))
                 {
                     SGVersionLogger.Log($"Reverting to original version: {state.originalVersion}");

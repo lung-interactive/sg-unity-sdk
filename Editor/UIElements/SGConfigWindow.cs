@@ -5,6 +5,7 @@ using UnityEditor.UIElements;
 using System.IO;
 using SGUnitySDK.Editor.Http;
 using System;
+using HMSUnitySDK;
 
 namespace SGUnitySDK.Editor
 {
@@ -43,6 +44,7 @@ namespace SGUnitySDK.Editor
         private TextField _fieldGameManagementToken;
         private Toggle _fieldShouldOverrideBaseURL;
         private TextField _fieldBaseURlOverride;
+        private ObjectField _fieldRuntimeProfile;
         private TextField _fieldBuildsDirectory;
         private Button _buttonDefineBuildsDirectory;
         private ListView _listBuildProfiles;
@@ -72,6 +74,10 @@ namespace SGUnitySDK.Editor
             _fieldShouldOverrideBaseURL = _containerMain.Q<Toggle>("field-should-override-base-url");
             _fieldShouldOverrideBaseURL.SetValueWithoutNotify(Config.ShouldOverrideBaseURL);
             _fieldShouldOverrideBaseURL.RegisterValueChangedCallback(OnOverrideBaseURLValueChanged);
+
+            _fieldRuntimeProfile = _containerMain.Q<ObjectField>("field-runtime-profile");
+            _fieldRuntimeProfile.SetValueWithoutNotify(Config.RuntimeProfile);
+            _fieldRuntimeProfile.RegisterValueChangedCallback(OnRuntimeProfileValueChanged);
 
             _fieldBaseURlOverride = _containerMain.Q<TextField>("field-base-url-override");
             _fieldBaseURlOverride.SetValueWithoutNotify(Config.BaseURLOverride);
@@ -155,6 +161,11 @@ namespace SGUnitySDK.Editor
         private void OnOverrideBaseURLValueChanged(ChangeEvent<string> evt)
         {
             Config.SetBaseUrlOverride(evt.newValue);
+        }
+
+        private void OnRuntimeProfileValueChanged(ChangeEvent<UnityEngine.Object> evt)
+        {
+            Config.SetRuntimeProfile(evt.newValue as HMSRuntimeProfile);
         }
 
         private void OnButtonDefineBuildsDirectoryClicked()

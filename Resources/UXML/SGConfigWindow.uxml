@@ -16,10 +16,14 @@
                     <ui:Toggle label="Override?" name="field-should-override-base-url" style="margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-bottom: 3px;" />
                     <ui:TextField label="URL" placeholder-text="The Base URL to override the default one" name="field-base-url-override" style="margin-top: 0; margin-right: 0; margin-bottom: 3px; margin-left: 0;" />
                 </ui:VisualElement>
+                <ui:VisualElement name="container-runtime" style="flex-grow: 1; padding-top: 5px; padding-bottom: 5px;">
+                    <ui:Label text="Runtime" class="label-header" />
+                    <ui:Label text="Production Profile" style="-unity-font-style: bold; margin-bottom: 5px;" />
+                    <uie:ObjectField type="HMSUnitySDK.HMSRuntimeProfile, HMSUnitySDK.Runtime" name="field-runtime-profile" />
+                </ui:VisualElement>
                 <ui:VisualElement name="container-builds" style="flex-grow: 1; padding-top: 5px; padding-bottom: 5px;">
                     <ui:Label text="Builds" class="label-header" />
                     <ui:VisualElement style="flex-grow: 1;">
-                        <ui:Label text="Setups" name="label-setups" style="-unity-font-style: bold; margin-bottom: 5px;" />
                         <ui:ListView show-add-remove-footer="true" reorderable="true" reorder-mode="Animated" show-bound-collection-size="false" show-border="true" name="list-build-profiles" style="min-height: 50px;" />
                     </ui:VisualElement>
                     <ui:VisualElement name="container-builds-directory" style="flex-grow: 1;">
