@@ -1,6 +1,6 @@
 {
   "name": "com.bravestremers.sg-unity-sdk",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "displayName": "StreamingGames Unity SDK",
   "description": "A Unity package for the StreamingGames Unity SDK.",
   "unity": "6000.1",

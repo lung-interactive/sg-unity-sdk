@@ -7,7 +7,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace PetCareZ
+namespace SGUnitySDK
 {
     public class ClientInitializer : MonoBehaviour
     {
