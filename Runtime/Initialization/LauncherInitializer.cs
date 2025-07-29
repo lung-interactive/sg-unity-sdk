@@ -10,11 +10,11 @@ using UnityEngine.Scripting;
 
 namespace SGUnitySDK
 {
-    public class LaucherInitializer : MonoBehaviour
+    public class LauncherInitializer : MonoBehaviour
     {
         private static TaskCompletionSource<bool> _initializationTcs;
 
-        public static Task Init => _initializationTcs?.Task ?? Task.CompletedTask;
+        public static Task<bool> Init => _initializationTcs?.Task ?? Task.FromResult(true);
 
         [SerializeField] private TextMeshProUGUI _textMeshPro;
         [SerializeField] private GameObject _loadingEffect;
