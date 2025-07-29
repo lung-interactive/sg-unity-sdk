@@ -38,7 +38,6 @@ namespace SGUnitySDK.Editor.Versioning
             SGVersionLogger.Initialize();
             var hmsRuntimeInfo = HMSRuntimeInfo.GetFromResources();
             _originalRuntimeProfile = hmsRuntimeInfo.Profile;
-            hmsRuntimeInfo.SetProfile(SGEditorConfig.instance.RuntimeProfile);
 
             try
             {
@@ -164,6 +163,15 @@ namespace SGUnitySDK.Editor.Versioning
                 };
             }
 
+            if (SGEditorConfig.instance.RuntimeProfile == null)
+            {
+                return new ReleaseCondition
+                {
+                    isMet = false,
+                    errorMessage = "HMS runtime profile not defined."
+                };
+            }
+
             var buildSetups = SGEditorConfig.instance.BuildSetups;
             if (buildSetups.Count == 0)
             {
@@ -227,6 +235,10 @@ namespace SGUnitySDK.Editor.Versioning
         private static async Awaitable<List<SGLocalBuildResult>> PerformBuilds(string targetVersion)
         {
             SGVersionLogger.Log($"Starting builds for version {targetVersion}...");
+
+            var hmsRuntimeInfo = HMSRuntimeInfo.GetFromResources();
+            hmsRuntimeInfo.SetProfile(SGEditorConfig.instance.RuntimeProfile);
+
             var buildSetups = SGEditorConfig.instance.BuildSetups;
             var commonBuildPath = SGEditorConfig.instance.BuildsDirectory;
             return await SGPlayerBuilder.PerformMultipleBuilds(buildSetups, commonBuildPath, targetVersion);
