@@ -6,10 +6,11 @@ using SocketIOClient;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Scripting;
 
 namespace SGUnitySDK
 {
-    public class ClientInitializer : MonoBehaviour
+    public class LaucherInitializer : MonoBehaviour
     {
         private static TaskCompletionSource<bool> _initializationTcs;
 
@@ -65,6 +66,7 @@ namespace SGUnitySDK
 
                 Time.timeScale = 1;
                 Destroy(gameObject);
+                System.GC.Collect();
             }
             catch (System.Exception ex)
             {
