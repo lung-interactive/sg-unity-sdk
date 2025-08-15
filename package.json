@@ -1,6 +1,6 @@
 {
-  "name": "com.bravestremers.sg-unity-sdk",
-  "version": "1.3.1",
+  "name": "com.lung-interactive.sg-unity-sdk",
+  "version": "1.3.2",
   "displayName": "StreamingGames Unity SDK",
   "description": "A Unity package for the StreamingGames Unity SDK.",
   "unity": "6000.1",
@@ -10,19 +10,19 @@
     "com.veriorpies.parrelsync": "^1.5.2",
     "com.indiegabo.hms-unity-sdk": "^1.1.1"
   },
-  "documentationUrl": "https://bravestreamers.github.io/sg-unity-sdk",
-  "changelogUrl": "https://bravestreamers.github.io/sg-unity-sdk/documentation/CHANGELOG.html",
-  "licensesUrl": "https://github.com/bravestreamers/sg-unity-sdk/blob/main/LICENSE.md",
+  "documentationUrl": "https://lung-interactive.github.io/sg-unity-sdk",
+  "changelogUrl": "https://lung-interactive.github.io/sg-unity-sdk/documentation/CHANGELOG.html",
+  "licensesUrl": "https://github.com/lung-interactive/sg-unity-sdk/blob/main/LICENSE.md",
   "author": {
-    "name": "bravestreamers",
-    "email": "bravestreamers@gmail.com",
-    "url": "http://github.com/bravestreamers"
+    "name": "lung-interactive",
+    "email": "lung-interactive@gmail.com",
+    "url": "http://github.com/lung-interactive"
   },
   "keywords": [
     "sg",
     "multiplayer",
     "editor",
-    "bravestreamers",
+    "lung-interactive",
     "streaming-games",
     "streaming"
   ]
