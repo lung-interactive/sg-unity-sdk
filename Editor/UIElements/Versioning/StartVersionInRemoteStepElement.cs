@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using SGUnitySDK.Editor.Http;
+using SGUnitySDK.Editor.Versioning;
 using SGUnitySDK.Http;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -16,7 +17,6 @@ namespace SGUnitySDK.Editor
         private readonly TemplateContainer _containerMain;
         private Button _buttonStartVersion;
         private Button _buttonCancelPreparation;
-        private SemVerType _targetVersion;
         private VisualElement _currentErrorElement;
 
         public StartVersionInRemoteStepElement()
@@ -30,7 +30,6 @@ namespace SGUnitySDK.Editor
             _buttonCancelPreparation = _containerMain.Q<Button>("button-cancel-version-in-preparation");
             _buttonCancelPreparation.clicked += OnButtonCancelPreparationClicked;
 
-            _targetVersion = VersioningProcess.instance.TargetVersion;
             Add(_containerMain);
         }
 
@@ -109,24 +108,16 @@ namespace SGUnitySDK.Editor
             ClearErrors();
             try
             {
-                var request = GameManagementRequest
-                    .To("/start-new-version", HttpMethod.Post)
-                    .SetBody(new StartGameVersionUpdateDTO()
-                    {
-                        VersionUpdateType = VersionUpdateType.Specific,
-                        SpecificVersion = _targetVersion.Raw,
-                        IsPrerelease = false
-                    });
-
-                var response = await request.SendAsync();
-                var startedVersion = response.ReadBodyData<VersionDTO>();
+                var startedVersion = await SGOperations
+                    .StartVersionWithRemote(
+                        VersioningProcess.instance,
+                        VersioningProcess.instance.TargetVersion
+                    );
 
                 if (startedVersion != null)
                 {
                     _buttonStartVersion.style.display = DisplayStyle.None;
                     _buttonCancelPreparation.style.display = DisplayStyle.Flex;
-                    VersioningProcess.instance.StartedInRemote = true;
-                    SGEditorConfig.instance.Persist();
                     SetReadyStatus(true);
                 }
                 else
@@ -151,13 +142,8 @@ namespace SGUnitySDK.Editor
             ClearErrors();
             try
             {
-                var request = GameManagementRequest
-                    .To("/cancel-version-in-preparation", HttpMethod.Delete);
+                await SGOperations.CancelVersionPreparation(VersioningProcess.instance);
 
-                await request.SendAsync();
-
-                VersioningProcess.instance.StartedInRemote = false;
-                SGEditorConfig.instance.Persist();
                 _buttonStartVersion.style.display = DisplayStyle.Flex;
                 _buttonCancelPreparation.style.display = DisplayStyle.None;
                 SetReadyStatus(false);

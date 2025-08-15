@@ -1,5 +1,5 @@
 <ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
-    <Style src="project://database/Assets/_ExternalDevelopment/SGUnitySDK/Resources/Styles/Common_style.uss?fileID=7433441132597879392&amp;guid=6f1cf7892ff31374fbc43ebe464e850e&amp;type=3#Common_style" />
+    <Style src="project://database/Assets/SGUnitySDK/Resources/Styles/Common_style.uss?fileID=7433441132597879392&amp;guid=6f1cf7892ff31374fbc43ebe464e850e&amp;type=3#Common_style" />
     <ui:TabView name="container-main" style="flex-shrink: 0; flex-grow: 1;">
         <ui:Tab label="Versioning" name="tab-versioning" data-source="project://database/Assets/_Scripts/External%20Development/SGUnitySDK/Resources/SGResources/SGConfig.asset?fileID=11400000&amp;guid=f2fd197f9c702664ea386a85b7a8d2c2&amp;type=2#SGConfig" data-source-path="_buildProfiles" style="flex-shrink: 0; flex-grow: 1; height: 100%;">
             <ui:VisualElement name="container-versioning" style="flex-grow: 1; margin-top: 5px; margin-right: 5px; margin-bottom: 5px; margin-left: 5px;">
@@ -18,6 +18,7 @@
                 <ui:VisualElement name="container-process" style="flex-grow: 1; background-color: rgb(29, 29, 29); border-top-left-radius: 5px; border-top-right-radius: 5px; border-bottom-right-radius: 5px; border-bottom-left-radius: 5px; align-items: stretch; justify-content: flex-start; padding-top: 5px; padding-right: 5px; padding-bottom: 5px; padding-left: 5px; margin-bottom: 5px; display: flex;">
                     <ui:VisualElement name="container-bar" style="flex-grow: 1; flex-direction: row; align-items: center; justify-content: space-between;">
                         <ui:Button text="Previous" name="button-previous" />
+                        <ui:VisualElement name="spacer" style="flex-grow: 1;" />
                         <ui:Button text="Next" name="button-next" />
                     </ui:VisualElement>
                     <ui:VisualElement name="container-steps" style="flex-grow: 1; padding-top: 5px; padding-bottom: 0;" />

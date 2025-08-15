@@ -10,6 +10,9 @@
     -unity-font-style: bold;
     border-bottom-color: rgba(113, 113, 113, 0.66);
     border-bottom-width: 1px;
+    border-bottom-left-radius: 0px;
+    border-bottom-right-radius: 0px;
+    border-bottom-style: solid;
     padding-bottom: 5px;
     margin-bottom: 10px;
 }
@@ -17,15 +20,16 @@
 .label-subheader {
     -unity-font-style: bold;
     border-bottom-color: rgba(113, 113, 113, 0.66);
-    border-bottom-width: 0;
-    padding-bottom: 0;
+    border-bottom-width: 0px;
+    border-bottom-style: solid;
+    padding-bottom: 0px;
     margin-bottom: 10px;
-    border-top-width: 0;
-    border-right-width: 0;
-    border-left-width: 0;
-    padding-top: 0;
-    padding-right: 0;
-    padding-left: 0;
+    border-top-width: 0px;
+    border-right-width: 0px;
+    border-left-width: 0px;
+    padding-top: 0px;
+    padding-right: 0px;
+    padding-left: 0px;
 }
 
 .bordered-box {
@@ -33,14 +37,21 @@
     border-right-color: rgba(137, 137, 137, 0.58);
     border-top-color: rgba(137, 137, 137, 0.58);
     border-bottom-color: rgba(137, 137, 137, 0.58);
+
     border-top-width: 1px;
     border-right-width: 1px;
     border-bottom-width: 1px;
     border-left-width: 1px;
+
     border-top-left-radius: 5px;
     border-top-right-radius: 5px;
     border-bottom-right-radius: 5px;
     border-bottom-left-radius: 5px;
+
+    border-top-style: solid;
+    border-right-style: solid;
+    border-bottom-style: solid;
+    border-left-style: solid;
 }
 
 .horizontal-field > Label {
@@ -76,16 +87,22 @@
     flex-grow: 1;
 }
 
+/* ERROR BOX */
 .error-container {
     margin: 5px;
     padding: 5px;
     background-color: rgb(165, 165, 165);
-    border-left: 3px solid rgb(99, 13, 13);
+
+    /* border-left: 3px solid ... (unsupported shorthand) */
+    border-left-width: 3px;
+    border-left-style: solid;
+    border-left-color: rgb(99, 13, 13);
+
     border-radius: 2px;
 }
 
 .error-title {
-    font-weight: bold;
+    -unity-font-style: bold;
     color: rgb(99, 13, 13);
     margin-bottom: 8px;
 }
@@ -95,22 +112,31 @@
 }
 
 .error-item {
-    margin: 4px 0;
+    margin-top: 4px;
+    margin-bottom: 4px;
     color: rgb(99, 13, 13);
 }
 
+/* BUILD ITEM ROW */
 .build-item {
     flex-direction: row;
     align-items: center;
     padding: 8px;
     margin-bottom: 4px;
-    border-bottom: 1px solid rgb(68, 68, 68);
+
+    /* border-bottom: 1px solid rgb(68,68,68) */
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+    border-bottom-color: rgb(68, 68, 68);
 }
 
 .build-status {
     width: 12px;
     height: 12px;
-    border-radius: 6px;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+    border-bottom-left-radius: 6px;
     margin-right: 8px;
 }
 
@@ -122,19 +148,23 @@
     background-color: rgb(231, 76, 60);
 }
 
+/* PLATFORM ICONS */
 .platform-icon {
     width: 24px;
     height: 24px;
     margin-right: 8px;
-    background-size: contain;
+
+    /* background-size: contain -> use scale-to-fit */
+    -unity-background-scale-mode: scale-to-fit;
 }
 
 .platform-icon.windows {
-    background-image: url('path/to/windows-icon.png');
+    /* Use Resources: Assets/SGUnitySDK/Resources/Styles/Icons/windows.png */
+    background-image: resource("Styles/Icons/windows");
 }
 
 .platform-icon.linux {
-    background-image: url('path/to/linux-icon.png');
+    background-image: resource("Styles/Icons/linux");
 }
 
 .build-info {
@@ -143,16 +173,15 @@
 }
 
 .build-platform-date {
-    font-weight: bold;
+    -unity-font-style: bold;
     font-size: 14px;
 }
 
 .build-path {
     color: rgb(153, 153, 153);
-    font-size: 12px;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    overflow: hidden;
+    font-size: 12px;    
+    white-space: normal; /* allow wrapping */
+    word-break: break-word; /* for very long URLs */
 }
 
 .build-error {
@@ -163,31 +192,47 @@
 
 .empty-builds-label {
     color: rgb(153, 153, 153);
-    text-align: center;
+    -unity-text-align: center;
     padding: 16px;
 }
 
+/* PATH + WARNING */
 .path-container {
     flex-direction: row;
     align-items: center;
-    gap: 4px;
+}
+
+/* Simulate 'gap: 4px' */
+.path-container > * {
+    margin-right: 4px;
 }
 
 .warning-icon {
     width: 16px;
     height: 16px;
-    background-image: url('Icons/warning');
-    background-size: contain;
+    background-image: resource("Styles/Icons/warning");
+    -unity-background-scale-mode: scale-to-fit;
 }
 
+/* ERROR CONTAINER (SECOND STYLE) */
 .error-container {
     flex-direction: column;
-    gap: 2px;
+
+    /* Simulate 'gap: 2px' */
+    /* We can't target only spacing between children reliably; use small margins on children if needed */
+
     background-color: rgb(54, 54, 54);
+
     border-top-width: 1px;
     border-right-width: 1px;
     border-bottom-width: 1px;
     border-left-width: 1px;
+
+    border-top-style: solid;
+    border-right-style: solid;
+    border-bottom-style: solid;
+    border-left-style: solid;
+
     border-top-left-radius: 5px;
     border-top-right-radius: 5px;
     border-bottom-right-radius: 5px;
@@ -198,11 +243,15 @@
     color: rgb(209, 172, 9);
     font-size: 12px;
     margin-top: 4px;
-    font-style: italic;
+    -unity-font-style: italic;
 }
 
+/* Hand cursor:
+   UI Toolkit supports named cursors, not resource() here.
+   Use 'cursor: link;' for a hand-like cursor in interactive items.
+*/
 .hand-cursor {
-    cursor: resource('Icons/click');
+    cursor: link;
 }
 
 .unity-tab {
@@ -212,4 +261,55 @@
 
 #tab-view-runtime-panel #unity-tab-view__content-container {
     flex-grow: 1;
+}
+
+/* ACTIONS (Upload button row) */
+.build-actions {
+    /* 'display' not used in USS; flex is default for VisualElement */
+    flex-direction: row;
+    align-items: center;
+    margin-top: 6px;
+}
+
+/* Simulate 'gap: 8px' */
+.build-actions > * {
+    margin-right: 8px;
+}
+
+/* Upload button look */
+.upload-button {
+    padding-top: 4px;
+    padding-bottom: 4px;
+    padding-left: 10px;
+    padding-right: 10px;
+
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+
+    -unity-font-style: bold;
+}
+
+/* line below the path when uploaded */
+.uploaded-line {
+    flex-direction: row;
+    align-items: flex-start;
+    margin-top: 4px;
+}
+
+/* "Uploaded" tag */
+.uploaded-label {
+    -unity-font-style: bold;
+    margin-right: 6px;
+    color: rgb(46, 204, 113);
+    font-size: 12px;
+}
+
+/* long URL can wrap */
+.uploaded-url {
+    color: rgb(153, 153, 153);
+    font-size: 12px;
+    white-space: normal; /* allow wrapping */
+    word-break: break-word; /* for very long URLs */
 }

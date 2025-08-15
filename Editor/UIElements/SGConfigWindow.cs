@@ -68,7 +68,7 @@ namespace SGUnitySDK.Editor
 
             // Config
             _fieldGameManagementToken = _containerMain.Q<TextField>("field-game-management-token");
-            _fieldGameManagementToken.SetValueWithoutNotify(Config.GMT);
+            _fieldGameManagementToken.SetValueWithoutNotify(Config.GameManagementToken);
             _fieldGameManagementToken.RegisterValueChangedCallback(OnGameManagementTokenValueChanged);
 
             _fieldShouldOverrideBaseURL = _containerMain.Q<Toggle>("field-should-override-base-url");
@@ -149,7 +149,7 @@ namespace SGUnitySDK.Editor
 
         private void OnGameManagementTokenValueChanged(ChangeEvent<string> evt)
         {
-            Config.SetGTM(evt.newValue);
+            Config.SetGameManagementToken(evt.newValue);
         }
 
         private void OnOverrideBaseURLValueChanged(ChangeEvent<bool> evt)

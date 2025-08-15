@@ -1,4 +1,5 @@
 using System;
+using SGUnitySDK.Editor.Versioning;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -124,6 +125,12 @@ namespace SGUnitySDK.Editor
 
         private void OnButtonRollbackClicked()
         {
+            _ = Rollback();
+        }
+
+        private async Awaitable Rollback()
+        {
+            await SGOperations.CancelVersionPreparation(_process);
             _process.TargetVersion = null;
             ArrangeFields(false);
             SetReadyStatus(false);

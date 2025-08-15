@@ -30,7 +30,7 @@ namespace SGUnitySDK.Editor.Http
             request.SetUrl(url);
             request.SetMethod(method);
             request.AddHeader("Content-Type", "application/json");
-            request.SetBearerAuth(SGEditorConfig.instance.GMT);
+            request.SetBearerAuth(SGEditorConfig.instance.GameManagementToken);
 
             return request;
         }

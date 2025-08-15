@@ -26,7 +26,7 @@ namespace SGUnitySDK.Editor.Versioning
 
         private static HMSRuntimeProfile _originalRuntimeProfile;
 
-        [MenuItem("Tools/SGUnitySDK/Versioning/Versionate and send to remote", false, 0)]
+        // [MenuItem("Tools/SGUnitySDK/Versioning/Versionate and send to remote", false, 0)]
         public static void StartVersioningProcess()
         {
             _ = PerformVersioningProcess();
@@ -125,7 +125,7 @@ namespace SGUnitySDK.Editor.Versioning
                 await ExecuteStep("Performing rollback", () => PerformRollback(state));
                 SGVersionLogger.Log("Rollback completed");
 
-                // Abre o arquivo de log imediatamente em caso de erro
+                // Opens the log file immediately
                 SGVersionLogger.SaveLog(openFile: true);
                 return;
             }
@@ -182,7 +182,7 @@ namespace SGUnitySDK.Editor.Versioning
                 };
             }
 
-            var gameManagementToken = SGEditorConfig.instance.GMT;
+            var gameManagementToken = SGEditorConfig.instance.GameManagementToken;
             if (string.IsNullOrEmpty(gameManagementToken))
             {
                 return new ReleaseCondition
@@ -235,13 +235,18 @@ namespace SGUnitySDK.Editor.Versioning
         private static async Awaitable<List<SGLocalBuildResult>> PerformBuilds(string targetVersion)
         {
             SGVersionLogger.Log($"Starting builds for version {targetVersion}...");
+            await Task.CompletedTask;
 
             var hmsRuntimeInfo = HMSRuntimeInfo.GetFromResources();
             hmsRuntimeInfo.SetProfile(SGEditorConfig.instance.RuntimeProfile);
 
             var buildSetups = SGEditorConfig.instance.BuildSetups;
             var commonBuildPath = SGEditorConfig.instance.BuildsDirectory;
-            return await SGPlayerBuilder.PerformMultipleBuilds(buildSetups, commonBuildPath, targetVersion);
+            return SGPlayerBuilder.PerformMultipleBuilds(
+                buildSetups,
+                commonBuildPath,
+                targetVersion
+            );
         }
 
         private static async Awaitable<VersionDTO> PrepareRemoteVersion(string version)

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Threading.Tasks;
 using SGUnitySDK.Utils;
 using UnityEditor;
 using UnityEditor.Build.Profile;
@@ -16,85 +15,89 @@ namespace SGUnitySDK.Editor.Versioning
     {
         private static readonly List<string> DefaultExclusionFilters = new()
         {
-            "DoNotShip",           // Official Unity exclusion
-            "BackUp",              // Common backup folders
-            "Temp",                // Temporary files
-            "~",                   // Temporary/backup files
-            ".tmp",                // Temporary files
-            ".bak",                // Backup files
-            ".git",                // Version control
-            ".svn",                // Version control
-            ".vs",                 // Visual Studio files
-            ".idea",               // Rider/IntelliJ files
-            "Builds",              // Common build output
-            "Logs",                // Log files
-            "Obj",                 // Intermediate build files
-            "Library",             // Unity generated files
-            "ProjectSettings~",    // Backup settings
-            "csc.rsp",             // Compiler response files
+            "DoNotShip",
+            "BackUp",
+            "Temp",
+            "~",
+            ".tmp",
+            ".bak",
+            ".git",
+            ".svn",
+            ".vs",
+            ".idea",
+            "Logs",
+            "Obj",
+            "Library",
+            "ProjectSettings~",
+            "csc.rsp",
             "mcs.rsp",
             "gmcs.rsp",
             "smcs.rsp",
-            "Thumbs.db",           // Windows thumbnail cache
-            ".DS_Store"            // macOS metadata
+            "Thumbs.db",
+            ".DS_Store"
         };
 
         /// <summary>
-        /// Performs multiple build operations asynchronously for a list of build setups.
+        /// Perform multiple builds synchronously on the main thread.
         /// </summary>
-        /// <param name="setups">A list of build setups to process.</param>
-        /// <param name="commonBuildPath">The directory path where all builds will be stored.</param>
-        /// <param name="targetVersion">The target version for the builds.</param>
-        /// <returns>A list of results for each build, indicating success or failure with additional details.</returns>
-        public static async Awaitable<List<SGLocalBuildResult>> PerformMultipleBuilds(
+        public static List<SGLocalBuildResult> PerformMultipleBuilds(
             List<SGBuildSetup> setups,
             string commonBuildPath,
             string targetVersion
         )
         {
-            List<SGLocalBuildResult> buildResults = new();
+            var buildResults = new List<SGLocalBuildResult>();
 
             try
             {
                 int totalSetups = setups.Count;
 
-                // Clean build directory
                 if (Directory.Exists(commonBuildPath))
                 {
                     Directory.Delete(commonBuildPath, true);
-                    Directory.CreateDirectory(commonBuildPath);
                 }
+                Directory.CreateDirectory(commonBuildPath);
 
-                foreach (var setup in setups)
+                for (int i = 0; i < setups.Count; i++)
                 {
+                    var setup = setups[i];
+
                     try
                     {
-                        var result = await BuildAndZipSetup(
+                        var result = BuildAndZipSetup(
                             setup,
                             commonBuildPath,
                             targetVersion,
-                            buildResults.Count,
+                            i,
                             totalSetups
                         );
+
                         buildResults.Add(result);
                     }
                     catch (Exception ex)
                     {
                         EditorUtility.ClearProgressBar();
+
                         buildResults.Add(new SGLocalBuildResult
                         {
                             success = false,
                             productName = setup.profile.name,
                             errorMessage = ex.Message
                         });
-                        Debug.LogError($"Error building profile {setup.profile.name}: {ex.Message}");
+
+                        Debug.LogError(
+                            $"Error building profile " +
+                            $"{setup.profile.name}: {ex.Message}"
+                        );
                     }
                 }
 
-                // Display summary of builds
-                int successfulBuilds = buildResults.Count(r => r.success);
+                int successful = buildResults.Count(r => r.success);
 
-                Debug.Log($"Successfully built {successfulBuilds} out of {totalSetups} profiles.");
+                Debug.Log(
+                    $"Successfully built {successful} out of " +
+                    $"{setups.Count} profiles."
+                );
             }
             catch (Exception ex)
             {
@@ -110,14 +113,9 @@ namespace SGUnitySDK.Editor.Versioning
         }
 
         /// <summary>
-        /// Builds and zips a given <see cref="SGBuildSetup"/>.</summary>
-        /// <param name="setup">The build setup to build and zip.</param>
-        /// <param name="commonBuildPath">The path to where the build will be saved.</param>
-        /// <param name="targetVersion">The version string to use for the build.</param>
-        /// <param name="completed">The number of builds that have been completed so far.</param>
-        /// <param name="totalSetups">The total number of build setups to build.</param>
-        /// <returns>A <see cref="SGLocalBuildResult"/> containing the result of the build and zip operation.</returns>
-        public static async Awaitable<SGLocalBuildResult> BuildAndZipSetup(
+        /// Build one setup and zip its output synchronously.
+        /// </summary>
+        public static SGLocalBuildResult BuildAndZipSetup(
             SGBuildSetup setup,
             string commonBuildPath,
             string targetVersion,
@@ -129,68 +127,121 @@ namespace SGUnitySDK.Editor.Versioning
             {
                 productName = Application.productName,
                 platform = setup.profile.GetBuildTargetInternal(),
-                BuiltAt = System.DateTime.Now
+                BuiltAt = DateTime.Now
             };
 
             try
             {
-                // Show build progress with percentage
-                string buildMessage = $"Building {setup.profile.name}...";
+                // ---------------- Build phase ----------------
+                string buildMsg = $"Building {setup.profile.name}...";
+                float buildPct = totalSetups > 0
+                    ? Mathf.Clamp01((float)completed / totalSetups)
+                    : 0f;
+
                 EditorUtility.DisplayProgressBar(
                     "Building Player",
-                    buildMessage,
-                    (float)completed / totalSetups
+                    buildMsg,
+                    buildPct
                 );
 
-                string buildFolderName = GetBuildFolderName(setup.profile, targetVersion);
-                string buildPath = Path.Combine(commonBuildPath, buildFolderName);
+                string buildFolderName = GetBuildFolderName(
+                    setup.profile,
+                    targetVersion
+                );
+
+                string buildPath = Path.Combine(
+                    commonBuildPath,
+                    buildFolderName
+                );
+
                 Directory.CreateDirectory(buildPath);
 
-                string executableName = GetExecutableName(setup.profile, targetVersion);
-                string buildCompletePath = Path.Combine(buildPath, executableName);
+                string executableName = GetExecutableName(
+                    setup.profile,
+                    targetVersion
+                );
 
-                // Let Unity handle its own build progress bar
-                var summary = SGPlayerBuilder.BuildUsingProfile(setup.profile, buildCompletePath);
+                string buildCompletePath = Path.Combine(
+                    buildPath,
+                    executableName
+                );
+
+                var summary = BuildUsingProfile(
+                    setup.profile,
+                    buildCompletePath
+                );
 
                 if (summary.result != BuildResult.Succeeded)
                 {
+                    EditorUtility.ClearProgressBar();
+
                     result.success = false;
-                    result.errorMessage = $"Build failed for profile {setup.profile.name}";
+                    result.errorMessage =
+                        $"Build failed for profile " +
+                        $"{setup.profile.name}";
                     Debug.LogError(result.errorMessage);
+
                     return result;
                 }
 
-
-                // The 'buildPath' currently holds the uncompressed build directory path.
-                // We will assign this to result.Path initially, then update it to the zip path.
                 result.path = buildPath;
 
-                // Clear Unity's build progress before showing our zipping progress
+                // ---------------- Zip phase (SYNC) -----------
                 EditorUtility.ClearProgressBar();
 
-                // Show indeterminate progress for zipping
-                EditorUtility.DisplayProgressBar(
-                    "Compressing Files",
-                    $"Zipping {setup.profile.name}...",
-                    -1
+                string zipFileName =
+                    $"{GetBaseName(setup.profile, targetVersion)}." +
+                    $"{GetPlatformName(setup.profile.GetBuildTargetInternal())}.zip";
+
+                string zipFilePath = Path.Combine(
+                    commonBuildPath,
+                    zipFileName
                 );
 
-                string zipFileName = $"{GetBaseName(setup.profile, targetVersion)}.{GetPlatformName(setup.profile.GetBuildTargetInternal())}.zip";
-                string zipFilePath = Path.Combine(commonBuildPath, zipFileName);
+                int lastFilesDone = 0;
+                ulong lastBytes = 0;
 
-                // Call SGCompressor.ZipAllFiles and directly capture its CompressingResult
-                var compressionResult = await SGCompressor.ZipAllFiles(
+                bool setExecBit =
+                    setup.profile.GetBuildTargetInternal()
+                    == BuildTarget.StandaloneLinux64;
+
+                var compression = SGCompressor.ZipAllFilesSync(
                     buildPath,
                     zipFilePath,
                     DefaultExclusionFilters,
                     System.IO.Compression.CompressionLevel.Optimal,
-                    ResolveCompressionPlatform(setup.profile.GetBuildTargetInternal())
+                    ResolveCompressionPlatform(
+                        setup.profile.GetBuildTargetInternal()
+                    ),
+                    onProgress: p =>
+                    {
+                        string msg =
+                            $"Zipping {setup.profile.name} " +
+                            $"({p.FilesDone}/{p.FilesTotal})\n" +
+                            $"{p.CurrentPath}";
+
+                        EditorUtility.DisplayProgressBar(
+                            "Compressing Files",
+                            msg,
+                            Mathf.Clamp01(p.TotalProgress)
+                        );
+
+                        // Optional lightweight log throttle
+                        if (p.FilesDone != lastFilesDone ||
+                            p.BytesDone - lastBytes > (1UL << 22))
+                        {
+                            lastFilesDone = p.FilesDone;
+                            lastBytes = p.BytesDone;
+                            // Debug.Log($"[ZIP] {p.FilesDone}/{p.FilesTotal}");
+                        }
+                    },
+                    setLinuxExecBit: setExecBit
                 );
 
                 result.success = true;
                 result.executableName = executableName;
-                result.path = zipFilePath; // Update result.Path to the final zip file path
-                result.compression = compressionResult; // Assign the full CompressingResult
+                result.path = zipFilePath;
+                result.compression = compression;
 
                 return result;
             }
@@ -207,23 +258,19 @@ namespace SGUnitySDK.Editor.Versioning
         }
 
         /// <summary>
-        /// Builds the player using the specified profile and options.
+        /// Use Unity Build Pipeline with the given profile.
         /// </summary>
-        /// <param name="profile">The build profile to use.</param>
-        /// <param name="outputPath">The path to write the built player to.</param>
-        /// <param name="buildOptions">The build options to use.</param>
-        /// <returns>A <see cref="BuildSummary"/> containing information about the build.</returns>
         private static BuildSummary BuildUsingProfile(
             BuildProfile profile,
             string outputPath,
             BuildOptions buildOptions = BuildOptions.None
         )
         {
-            var directoryName = Path.GetDirectoryName(outputPath);
-            Directory.CreateDirectory(directoryName);
+            var dir = Path.GetDirectoryName(outputPath);
+            Directory.CreateDirectory(dir);
             BuildProfile.SetActiveBuildProfile(profile);
 
-            var options = new BuildPlayerWithProfileOptions()
+            var options = new BuildPlayerWithProfileOptions
             {
                 locationPathName = outputPath,
                 options = buildOptions,
@@ -234,37 +281,52 @@ namespace SGUnitySDK.Editor.Versioning
             return report.summary;
         }
 
-        private static string GetBaseName(BuildProfile profile, string version)
+        private static string GetBaseName(
+            BuildProfile profile,
+            string version
+        )
         {
-            string productName = SanitizeFileName(Application.productName);
-            string sanitizedVersion = SanitizeVersion(version);
-            return $"{productName}.v{sanitizedVersion}";
+            string product = SanitizeFileName(Application.productName);
+            string ver = SanitizeVersion(version);
+            return $"{product}.v{ver}";
         }
 
-        private static string GetBuildFolderName(BuildProfile profile, string version)
+        private static string GetBuildFolderName(
+            BuildProfile profile,
+            string version
+        )
         {
-            return $"{GetBaseName(profile, version)}.{GetPlatformName(profile.GetBuildTargetInternal())}";
+            return $"{GetBaseName(profile, version)}." +
+                   $"{GetPlatformName(profile.GetBuildTargetInternal())}";
         }
 
-        private static string GetExecutableName(BuildProfile profile, string version)
+        private static string GetExecutableName(
+            BuildProfile profile,
+            string version
+        )
         {
             string baseName = GetBaseName(profile, version);
             var platform = profile.GetBuildTargetInternal();
 
             return platform switch
             {
-                BuildTarget.StandaloneWindows or BuildTarget.StandaloneWindows64 => $"{baseName}.exe",
-                BuildTarget.StandaloneLinux64 => $"{baseName}.x86_64",
-                BuildTarget.StandaloneOSX => $"{baseName}.app",
+                BuildTarget.StandaloneWindows
+                or BuildTarget.StandaloneWindows64
+                    => $"{baseName}.exe",
+                BuildTarget.StandaloneLinux64
+                    => $"{baseName}.x86_64",
+                BuildTarget.StandaloneOSX
+                    => $"{baseName}.app",
                 _ => $"{baseName}.exe"
             };
         }
 
-        private static string GetPlatformName(BuildTarget buildTarget)
+        private static string GetPlatformName(BuildTarget target)
         {
-            return buildTarget switch
+            return target switch
             {
-                BuildTarget.StandaloneWindows or BuildTarget.StandaloneWindows64 => "windows",
+                BuildTarget.StandaloneWindows
+                or BuildTarget.StandaloneWindows64 => "windows",
                 BuildTarget.StandaloneLinux64 => "linux",
                 BuildTarget.StandaloneOSX => "macos",
                 _ => "windows"
@@ -273,8 +335,8 @@ namespace SGUnitySDK.Editor.Versioning
 
         private static string SanitizeFileName(string name)
         {
-            var invalidChars = Path.GetInvalidFileNameChars();
-            return string.Concat(name.Split(invalidChars));
+            var invalid = Path.GetInvalidFileNameChars();
+            return string.Concat(name.Split(invalid));
         }
 
         private static string SanitizeVersion(string version)
@@ -282,15 +344,27 @@ namespace SGUnitySDK.Editor.Versioning
             return version.Replace('.', '_');
         }
 
-        private static CompressionPlatform ResolveCompressionPlatform(BuildTarget buildTarget)
+        private static CompressionPlatform ResolveCompressionPlatform(
+            BuildTarget target
+        )
         {
-            return buildTarget switch
+            return target switch
             {
                 BuildTarget.StandaloneWindows
-                or BuildTarget.StandaloneWindows64 => CompressionPlatform.Windows,
-                BuildTarget.StandaloneLinux64 => CompressionPlatform.Linux,
+                or BuildTarget.StandaloneWindows64
+                    => CompressionPlatform.Windows,
+                BuildTarget.StandaloneLinux64
+                    => CompressionPlatform.Linux,
                 _ => CompressionPlatform.Windows
             };
+        }
+
+        public static void ClearBuildsDirectory(string path)
+        {
+            if (Directory.Exists(path))
+            {
+                Directory.Delete(path, true);
+            }
         }
     }
 }

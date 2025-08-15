@@ -12,7 +12,7 @@ namespace SGUnitySDK.Editor
     {
         private static readonly string API_BASE_URL = "https://streaminggames.io/v1";
 
-        [SerializeField] private string _gmt;
+        [SerializeField] private string _gameManagementToken;
         [SerializeField] private bool _shouldOverrideBaseUrl = false;
         [SerializeField] private string _baseUrlOverride;
         [SerializeField] private HMSRuntimeProfile _runtimeProfile;
@@ -23,11 +23,11 @@ namespace SGUnitySDK.Editor
         public bool ShouldOverrideBaseURL => _shouldOverrideBaseUrl;
         public string BaseURLOverride => _baseUrlOverride;
         public HMSRuntimeProfile RuntimeProfile => _runtimeProfile;
-        public string GMT => _gmt;
+        public string GameManagementToken => _gameManagementToken;
         public string BuildsDirectory => _buildsDirectory;
         public List<SGBuildSetup> BuildSetups => _buildSetups;
 
-        public bool IsGMTValid => !string.IsNullOrEmpty(_gmt);
+        public bool IsGMTValid => !string.IsNullOrEmpty(_gameManagementToken);
 
         #region Editor Methods
 
@@ -41,11 +41,11 @@ namespace SGUnitySDK.Editor
             }
         }
 
-        public void SetGTM(string value)
+        public void SetGameManagementToken(string value)
         {
-            if (_gmt != value)
+            if (_gameManagementToken != value)
             {
-                _gmt = value;
+                _gameManagementToken = value;
                 Persist();
             }
         }
@@ -92,7 +92,7 @@ namespace SGUnitySDK.Editor
         {
             _shouldOverrideBaseUrl = false;
             _baseUrlOverride = string.Empty;
-            _gmt = string.Empty;
+            _gameManagementToken = string.Empty;
             _buildsDirectory = DefaultBuildsDirectory();
             _buildSetups = new List<SGBuildSetup>();
             Persist();
@@ -105,7 +105,12 @@ namespace SGUnitySDK.Editor
 
         private static string DefaultBuildsDirectory()
         {
-            return Path.GetFullPath(Path.Combine(Application.dataPath, "..", "SGUnitySDKBuilds"));
+            return Path.GetFullPath(Path.Combine(
+                Application.dataPath,
+                "..",
+                "SGUnitySDK",
+                "Builds"
+            ));
         }
 
         #endregion

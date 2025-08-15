@@ -1,0 +1,6 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <Style src="project://database/Assets/SGUnitySDK/Resources/Styles/Common_style.uss?fileID=7433441132597879392&amp;guid=6f1cf7892ff31374fbc43ebe464e850e&amp;type=3#Common_style" />
+    <ui:Label text="Step 4 - Close Version" class="label-header" />
+    <ui:VisualElement name="container-summary" class="container" style="flex-grow: 0;" />
+    <ui:Button text="Close Version" name="button-close-version" />
+</ui:UXML>

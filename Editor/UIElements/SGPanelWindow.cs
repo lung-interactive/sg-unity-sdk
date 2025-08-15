@@ -8,20 +8,20 @@ using System;
 
 namespace SGUnitySDK.Editor
 {
-    public class SGVersionerWindow : EditorWindow
+    public class SGPanelWindow : EditorWindow
     {
         #region Static
 
-        private static readonly string TemplateName = "SGBuilderWindow";
-        private static SGVersionerWindow _window;
+        private static readonly string TemplateName = "SGPanelWindow";
+        private static SGPanelWindow _window;
 
-        [MenuItem("Tools/SGUnitySDK/Versioning/Versioner Window", false, 0)]
+        [MenuItem("Tools/SGUnitySDK/Main Panel", false, 0)]
         public static void ShowWindow()
         {
             if (_window == null)
             {
-                _window = GetWindow<SGVersionerWindow>();
-                _window.titleContent = new GUIContent("Versioner");
+                _window = GetWindow<SGPanelWindow>();
+                _window.titleContent = new GUIContent("SGUnitySDK");
                 _window.minSize = new Vector2(400, 300);
             }
             else
@@ -90,7 +90,7 @@ namespace SGUnitySDK.Editor
 
             // Config
             _fieldGameManagementToken = _containerMain.Q<TextField>("field-game-management-token");
-            _fieldGameManagementToken.SetValueWithoutNotify(Config.GMT);
+            _fieldGameManagementToken.SetValueWithoutNotify(Config.GameManagementToken);
             _fieldGameManagementToken.RegisterValueChangedCallback(OnGameManagementTokenValueChanged);
 
             _fieldShouldOverrideBaseURL = _containerMain.Q<Toggle>("field-should-override-base-url");
@@ -168,7 +168,7 @@ namespace SGUnitySDK.Editor
 
         private void OnGameManagementTokenValueChanged(ChangeEvent<string> evt)
         {
-            Config.SetGTM(evt.newValue);
+            Config.SetGameManagementToken(evt.newValue);
         }
 
         private void OnOverrideBaseURLValueChanged(ChangeEvent<bool> evt)
@@ -203,15 +203,6 @@ namespace SGUnitySDK.Editor
 
         #endregion
 
-        #region Config Builds
-
-        private void SelectBuildsDirectory(ChangeEvent<string> evt)
-        {
-            Config.SetBuildsDirectory(evt.newValue);
-        }
-
-        #endregion
-
         #region Requests
 
         private async Awaitable FetchVersions()
@@ -222,6 +213,16 @@ namespace SGUnitySDK.Editor
             try
             {
                 var response = await GameManagementRequest.To("version").SendAsync();
+                if (!response.Success)
+                {
+                    var errorBody = response.ReadErrorBody();
+                    foreach (var message in errorBody.Messages)
+                    {
+                        SGLogger.LogError(message);
+                    }
+                    return;
+                }
+
                 var remoteVersion = response.ReadBodyData<VersionDTO>();
                 _labelVersionLocal.text = localVersion;
                 if (remoteVersion != null && remoteVersion.Semver != null)
@@ -231,27 +232,7 @@ namespace SGUnitySDK.Editor
                 else
                 {
                     _labelVersionRemote.text = "N/A";
-                }
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogException(e);
-            }
-        }
-
-        private async Awaitable SendVersionToServer()
-        {
-            try
-            {
-                var response = await GameManagementRequest.To("start-new-version").SendAsync();
-                var remoteVersion = response.ReadBodyData<VersionDTO>();
-                if (remoteVersion != null && remoteVersion.Semver != null)
-                {
-                    _labelVersionRemote.text = remoteVersion.Semver;
-                }
-                else
-                {
-                    _labelVersionRemote.text = "N/A";
+                    SGLogger.LogWarning("No version found on server");
                 }
             }
             catch (System.Exception e)

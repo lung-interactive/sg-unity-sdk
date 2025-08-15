@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using SGUnitySDK.Editor.Versioning;
 using UnityEditor;
 using UnityEngine;
@@ -12,12 +13,13 @@ namespace SGUnitySDK.Editor
     public class GenerateBuildsStepElement : VersioningStepElement
     {
         private static readonly string TemplateName = "SGProcessStep3_GenerateBuilds";
-        public override VersioningStep Step => VersioningStep.GenerateBuilds;
+        public override VersioningStep Step => VersioningStep.Builds;
 
         private readonly TemplateContainer _containerMain;
         private readonly Button _buttonGenerateBuilds;
         private readonly ScrollView _scrollBuildsList;
-        private List<SGLocalBuildResult> _cachedBuilds = new();
+
+        private List<SGVersionBuildEntry> _cachedBuilds = new();
         private SGEditorConfig Config => SGEditorConfig.instance;
 
         public GenerateBuildsStepElement()
@@ -53,20 +55,25 @@ namespace SGUnitySDK.Editor
 
         private void RefreshBuildsCache()
         {
-            _cachedBuilds = new List<SGLocalBuildResult>(VersioningProcess.instance.LocalBuilds);
+            _cachedBuilds = new List<SGVersionBuildEntry>(VersioningProcess.instance.VersionBuilds);
             UpdateBuildsList();
             UpdateReadyStatus();
         }
 
         private void UpdateReadyStatus()
         {
-            bool hasValidSuccessfulBuild = _cachedBuilds.Any(b =>
-                b.success
-                && !string.IsNullOrEmpty(b.path)
-                && File.Exists(b.path)
-            );
+            // Só “pronto” quando TODAS as builds ok + zip existe + uploaded true + sem erro
+            bool ready =
+                _cachedBuilds.Count > 0 &&
+                _cachedBuilds.All(b =>
+                    b.build.success &&
+                    !string.IsNullOrEmpty(b.build.path) &&
+                    File.Exists(b.build.path) &&
+                    b.uploaded &&
+                    string.IsNullOrEmpty(b.uploadError)
+                );
 
-            SetReadyStatus(hasValidSuccessfulBuild);
+            SetReadyStatus(ready);
         }
 
         private void UpdateBuildsList()
@@ -81,38 +88,106 @@ namespace SGUnitySDK.Editor
                 return;
             }
 
-            foreach (var build in _cachedBuilds)
+            for (int i = 0; i < _cachedBuilds.Count; i++)
             {
-                var buildItem = VersionStepElementsHelpers.CreateBuildItemElement(build);
+                int index = i; // capture
+                var buildItem = VersionStepElementsHelpers.CreateBuildItemElement(
+                    _cachedBuilds[i],
+                    onUploadClicked: entry => { _ = OnUploadBuildClicked(index, entry); }
+                );
                 _scrollBuildsList.Add(buildItem);
             }
         }
 
         private void OnButtonGenerateBuildsClicked()
         {
-            _ = GenerateBuilds();
+            GenerateBuilds();
         }
 
-        private async Awaitable GenerateBuilds()
+        private void GenerateBuilds()
         {
-            VersioningProcess.instance.ClearLocalBuilds();
+            VersioningProcess.instance.ClearVersionBuilds();
+
             var setups = Config.BuildSetups;
             var commonBuildPath = Path.Combine(Config.BuildsDirectory);
-            string targetVersion = VersioningProcess.instance.TargetVersion.Raw;
+            string targetVersion = VersioningProcess.instance.TargetVersion?.Raw ?? "0.0.0";
+
+            Debug.Log($"-SG Generating builds for version {targetVersion}...");
+            Debug.Log($"-SG Common build path: {commonBuildPath}");
+
             _buttonGenerateBuilds.SetEnabled(false);
 
             try
             {
-                var buildResults = await SGPlayerBuilder.PerformMultipleBuilds(
+                var localResults = SGPlayerBuilder.PerformMultipleBuilds(
                     setups,
                     commonBuildPath,
-                    targetVersion);
+                    targetVersion
+                );
 
-                VersioningProcess.instance.LocalBuilds = buildResults;
+                var entries = localResults.Select(r => new SGVersionBuildEntry
+                {
+                    build = r,
+                    uploaded = false,
+                    remoteUrl = null,
+                    sha256 = null,
+                    uploadError = null,
+                    uploadUnixTimestamp = 0
+                }).ToList();
+
+                VersioningProcess.instance.VersionBuilds = entries;
             }
             finally
             {
                 _buttonGenerateBuilds.SetEnabled(true);
+            }
+        }
+
+        /// <summary>
+        /// Upload handler (async), atualiza o entry no VersioningProcess.
+        /// </summary>
+        private async Awaitable OnUploadBuildClicked(int index, SGVersionBuildEntry entry)
+        {
+            // Checa se já existe semver remoto
+            var semver = VersioningProcess.instance.TargetVersion.Raw;
+            if (string.IsNullOrEmpty(semver))
+            {
+                EditorUtility.DisplayDialog(
+                    "Start version first",
+                    "No remote version is active. Please run 'Start Version In Remote' step before uploading.",
+                    "OK"
+                );
+                return;
+            }
+
+            if (!entry.IsBuildOkAndZipExists())
+            {
+                EditorUtility.DisplayDialog(
+                    "Upload",
+                    "Build file is missing or invalid.",
+                    "OK"
+                );
+                return;
+            }
+
+            try
+            {
+                using var cts = new CancellationTokenSource();
+                var updated = await SGBuildUploader.UploadBuildZipAsync(entry, semver, cts.Token);
+
+                VersioningProcess.instance.ReplaceVersionBuild(index, updated);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Upload failed: {ex.Message}");
+                entry.MarkUploadFailed(ex.Message);
+                VersioningProcess.instance.ReplaceVersionBuild(index, entry);
+
+                EditorUtility.DisplayDialog(
+                    "Upload failed",
+                    ex.Message,
+                    "OK"
+                );
             }
         }
     }

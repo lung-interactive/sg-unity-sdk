@@ -1,11 +1,13 @@
 using System.Collections.Generic;
+using System.IO;
+using SGUnitySDK.Editor.Versioning;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Events;
 
 namespace SGUnitySDK.Editor
 {
-    [FilePath("SGUnitySDK/SGVersioningProcess", FilePathAttribute.Location.PreferencesFolder)]
+    [FilePath("SGUnitySDK/SGVersioningProcess", FilePathAttribute.Location.ProjectFolder)]
     public class VersioningProcess : ScriptableSingleton<VersioningProcess>
     {
         [SerializeField]
@@ -17,11 +19,19 @@ namespace SGUnitySDK.Editor
         [SerializeField]
         private bool _startedInRemote = false;
 
+        // NEW: semver da versão aberta no backend (Start Version In Remote)
         [SerializeField]
-        private List<SGLocalBuildResult> _buildResults = new();
+        private string _remoteSemver = null;
+
+        // Agora guardamos (build + upload state)
+        [SerializeField]
+        private List<SGVersionBuildEntry> _versionBuilds = new();
 
         public event UnityAction<VersioningStep> StepChanged;
         public event UnityAction<SemVerType> TargetVersionDefined;
+        public event UnityAction ProcessEnded;
+
+        /// Mantemos o nome do evento por compat: significa "VersionBuilds changed".
         public event UnityAction LocalBuildsChanged;
 
         public VersioningStep CurrentStep => _currentStep;
@@ -29,21 +39,27 @@ namespace SGUnitySDK.Editor
         public bool StartedInRemote
         {
             get => _startedInRemote;
-            set
-            {
-                _startedInRemote = value;
-            }
+            set { _startedInRemote = value; Persist(); }
+        }
+
+        public string RemoteSemver
+        {
+            get => _remoteSemver;
+            set { _remoteSemver = value; Persist(); }
         }
 
         public SemVerType TargetVersion
         {
-            get => string.IsNullOrEmpty(_targetVersionString) ? null : SemVerType.From(_targetVersionString);
+            get => string.IsNullOrEmpty(_targetVersionString)
+                ? null
+                : SemVerType.From(_targetVersionString);
             set
             {
                 if (value == null)
                 {
                     _targetVersionString = null;
                     TargetVersionDefined?.Invoke(null);
+                    Persist();
                     return;
                 }
                 _targetVersionString = value.Raw;
@@ -52,22 +68,41 @@ namespace SGUnitySDK.Editor
             }
         }
 
-        public List<SGLocalBuildResult> LocalBuilds
+        public List<SGVersionBuildEntry> VersionBuilds
         {
-            get => _buildResults;
+            get => _versionBuilds;
             set
             {
-                _buildResults = value;
+                _versionBuilds = value ?? new List<SGVersionBuildEntry>();
                 LocalBuildsChanged?.Invoke();
                 Persist();
             }
         }
 
-        public void ClearLocalBuilds()
+        public void ClearVersionBuilds(bool deleteFiles = true)
         {
-            _buildResults.Clear();
+            _versionBuilds.Clear();
+            if (deleteFiles)
+            {
+                string path = SGEditorConfig.instance.BuildsDirectory;
+                if (Directory.Exists(path))
+                {
+                    Directory.Delete(path, true);
+                }
+            }
+            LocalBuildsChanged?.Invoke();
             Persist();
         }
+
+        public void ReplaceVersionBuild(int index, SGVersionBuildEntry entry)
+        {
+            if (index < 0 || index >= _versionBuilds.Count) return;
+            _versionBuilds[index] = entry;
+            LocalBuildsChanged?.Invoke();
+            Persist();
+        }
+
+        public void Persist() => Save(true);
 
         public void AdvanceStep()
         {
@@ -76,9 +111,7 @@ namespace SGUnitySDK.Editor
                 Debug.LogWarning("Já estamos no último passo do processo (Deploy). Não é possível avançar mais.");
                 return;
             }
-
             _currentStep = (VersioningStep)((int)_currentStep + 1);
-
             StepChanged?.Invoke(_currentStep);
             Persist();
         }
@@ -91,23 +124,25 @@ namespace SGUnitySDK.Editor
                 return;
             }
             _currentStep = (VersioningStep)((int)_currentStep - 1);
+            StepChanged?.Invoke(_currentStep);
             Persist();
+        }
+
+        public void EndProcess()
+        {
+            ResetProcess();
+            ProcessEnded?.Invoke();
         }
 
         public void ResetProcess()
         {
             _currentStep = VersioningStep.DefineTargetVersion;
             StepChanged?.Invoke(_currentStep);
-
             _targetVersionString = null;
+            _remoteSemver = null;
             _startedInRemote = false;
-            _buildResults.Clear();
+            _versionBuilds.Clear();
             Persist();
-        }
-
-        public void Persist()
-        {
-            Save(true);
         }
     }
 
@@ -115,8 +150,7 @@ namespace SGUnitySDK.Editor
     {
         DefineTargetVersion = 0,
         StartVersionInRemote = 1,
-        GenerateBuilds = 2,
-        SendBuildsToRemote = 3,
-        CloseVersion = 4,
+        Builds = 2,
+        CloseVersion = 3,
     }
 }

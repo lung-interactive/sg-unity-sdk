@@ -28,6 +28,9 @@ namespace SGUnitySDK.Editor
 
         #endregion
 
+        /// <summary>
+        /// ctor. Wires UI and subscribes to ProcessEnded to jump to step 0.
+        /// </summary>
         public VersioningSectionManager(VisualElement container)
         {
             _container = container;
@@ -40,8 +43,23 @@ namespace SGUnitySDK.Editor
 
             _containerSteps = _container.Q<VisualElement>("container-steps");
 
+            // Subscribe to process end: always go back to step 0.
+            VersioningProcess.instance.ProcessEnded += OnProcessEnded;
+
             GenerateStepsList();
             EvaluateVersioningProcess();
+        }
+
+        /// <summary>
+        /// Optional cleanup if you need to dispose this manager.
+        /// </summary>
+        public void Dispose()
+        {
+            try
+            {
+                VersioningProcess.instance.ProcessEnded -= OnProcessEnded;
+            }
+            catch { /* ignore if instance is unavailable on domain reload */ }
         }
 
         private void OnPreviousButtonClicked()
@@ -68,6 +86,16 @@ namespace SGUnitySDK.Editor
             }
         }
 
+        /// <summary>
+        /// When the process ends, jump to step 0 and refresh UI.
+        /// </summary>
+        private void OnProcessEnded()
+        {
+            ActivateStep(VersioningStep.DefineTargetVersion);
+            Config.Persist();
+            GC.Collect();
+        }
+
         private void EvaluateVersioningProcess()
         {
             var onGoingProcess = VersioningProcess.instance;
@@ -78,20 +106,25 @@ namespace SGUnitySDK.Editor
         {
             if (_currentStepElement != null)
             {
-                _currentStepElement.ReadyStatusChanged -= OnCurrentStepReadyStatusChanged;
+                _currentStepElement.ReadyStatusChanged -=
+                    OnCurrentStepReadyStatusChanged;
                 _containerSteps.Remove(_currentStepElement);
             }
 
             var index = (int)versioningStep;
             if (index < 0 || index >= _stepsList.Count)
             {
-                Debug.LogError($"Index {index} is out of range for step list {_stepsList.Count}");
+                Debug.LogError(
+                    $"Index {index} is out of range for step list " +
+                    $"{_stepsList.Count}"
+                );
                 return;
             }
 
             _currentStepIndex = index;
             _currentStepElement = _stepsList[_currentStepIndex];
-            _currentStepElement.ReadyStatusChanged += OnCurrentStepReadyStatusChanged;
+            _currentStepElement.ReadyStatusChanged +=
+                OnCurrentStepReadyStatusChanged;
 
             // Update button visibility and state
             UpdateNavigationButtons();
@@ -108,9 +141,10 @@ namespace SGUnitySDK.Editor
                 : DisplayStyle.None;
 
             // Next button - visible only if not last step
-            _buttonNext.style.display = _currentStepIndex < _stepsList.Count - 1
-                ? DisplayStyle.Flex
-                : DisplayStyle.None;
+            _buttonNext.style.display =
+                _currentStepIndex < _stepsList.Count - 1
+                    ? DisplayStyle.Flex
+                    : DisplayStyle.None;
 
             // Next button starts disabled until step is ready
             _buttonNext.SetEnabled(false);
@@ -121,17 +155,22 @@ namespace SGUnitySDK.Editor
             // Only enable Next button if:
             // 1. The step is ready
             // 2. We're not on the last step
-            _buttonNext.SetEnabled(ready && _currentStepIndex < _stepsList.Count - 1);
+            _buttonNext.SetEnabled(
+                ready && _currentStepIndex < _stepsList.Count - 1
+            );
             Config.Persist();
         }
 
         private void GenerateStepsList()
         {
             Type versioningStepElementType = typeof(VersioningStepElement);
-            var stepElementTypes = versioningStepElementType.Assembly.GetTypes()
-                .Where(t => t.IsClass &&
-                           !t.IsAbstract &&
-                           t.IsSubclassOf(versioningStepElementType));
+            var stepElementTypes = versioningStepElementType.Assembly
+                .GetTypes()
+                .Where(t =>
+                    t.IsClass &&
+                    !t.IsAbstract &&
+                    t.IsSubclassOf(versioningStepElementType)
+                );
 
             _stepsList = new List<VersioningStepElement>();
 
@@ -139,7 +178,8 @@ namespace SGUnitySDK.Editor
             {
                 try
                 {
-                    var instance = (VersioningStepElement)Activator.CreateInstance(type);
+                    var instance =
+                        (VersioningStepElement)Activator.CreateInstance(type);
 
                     if (instance != null)
                     {
@@ -148,7 +188,9 @@ namespace SGUnitySDK.Editor
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogError($"Failed to create instance of {type.Name}");
+                    Debug.LogError(
+                        $"Failed to create instance of {type.Name}"
+                    );
                     Debug.LogException(ex);
                 }
             }
