@@ -62,7 +62,6 @@ namespace SGUnitySDK.Editor
 
         private void UpdateReadyStatus()
         {
-            // Só “pronto” quando TODAS as builds ok + zip existe + uploaded true + sem erro
             bool ready =
                 _cachedBuilds.Count > 0 &&
                 _cachedBuilds.All(b =>

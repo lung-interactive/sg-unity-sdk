@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using HMSUnitySDK;
 using SGUnitySDK.Utils;
 using UnityEditor;
 using UnityEditor.Build.Profile;
@@ -11,6 +12,12 @@ using UnityEngine;
 
 namespace SGUnitySDK.Editor.Versioning
 {
+    /// <summary>
+    /// Builds multiple player targets and zips outputs. Integrates with
+    /// HMSRuntimeInfo so that the HMSRuntimeProfile configured in
+    /// SGEditorConfig is applied to the Resources asset during builds and then
+    /// restored afterward.
+    /// </summary>
     public static class SGPlayerBuilder
     {
         private static readonly List<string> DefaultExclusionFilters = new()
@@ -37,9 +44,120 @@ namespace SGUnitySDK.Editor.Versioning
             ".DS_Store"
         };
 
+        // ─────────────────────────────────────────────────────────────────────
+        // HMS Runtime Profile Patch (apply/restore)
+        // ─────────────────────────────────────────────────────────────────────
+
+        private static HMSRuntimeProfile _cachedProfile;
+        private static bool _profilePatched;
+
         /// <summary>
-        /// Perform multiple builds synchronously on the main thread.
+        /// Applies the runtime profile from SGEditorConfig into the
+        /// HMSRuntimeInfo asset in Resources, caching the original profile
+        /// so it can be restored later.
         /// </summary>
+        private static void ApplyRuntimeProfilePatch()
+        {
+#if UNITY_EDITOR
+            try
+            {
+                var cfg = SGUnitySDK.Editor.SGEditorConfig.instance;
+                var selectedProfile = cfg != null ? cfg.RuntimeProfile : null;
+
+                var runtimeInfo = HMSRuntimeInfo.GetFromResources();
+                if (runtimeInfo == null)
+                {
+                    Debug.LogWarning(
+                        "[SG Build] HMSRuntimeInfo asset not found in " +
+                        "Resources. Profile patch will be skipped."
+                    );
+                    return;
+                }
+
+                _cachedProfile = runtimeInfo.Profile;
+                _profilePatched = true;
+
+                runtimeInfo.SetProfile(selectedProfile);
+                EditorUtility.SetDirty(runtimeInfo);
+                AssetDatabase.SaveAssets();
+                HMSRuntimeInfo.ClearCache();
+
+                Debug.Log(
+                    "[SG Build] HMSRuntimeProfile applied to Resources: " +
+                    (selectedProfile != null ? selectedProfile.name : "NULL")
+                );
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError(
+                    "[SG Build] Failed to apply HMSRuntimeProfile patch. " +
+                    $"Reason: {ex.Message}"
+                );
+            }
+#endif
+        }
+
+        /// <summary>
+        /// Restores the previous HMSRuntimeProfile into the HMSRuntimeInfo
+        /// asset if it had been patched by ApplyRuntimeProfilePatch.
+        /// </summary>
+        private static void RestoreRuntimeProfilePatch()
+        {
+#if UNITY_EDITOR
+            if (!_profilePatched) return;
+
+            try
+            {
+                var runtimeInfo = HMSRuntimeInfo.GetFromResources();
+                if (runtimeInfo == null)
+                {
+                    Debug.LogWarning(
+                        "[SG Build] HMSRuntimeInfo asset not found in " +
+                        "Resources during restore. Profile may remain altered."
+                    );
+                    _cachedProfile = null;
+                    _profilePatched = false;
+                    return;
+                }
+
+                runtimeInfo.SetProfile(_cachedProfile);
+                EditorUtility.SetDirty(runtimeInfo);
+                AssetDatabase.SaveAssets();
+                HMSRuntimeInfo.ClearCache();
+
+                Debug.Log(
+                    "[SG Build] HMSRuntimeProfile restored to: " +
+                    (_cachedProfile != null ? _cachedProfile.name : "NULL")
+                );
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError(
+                    "[SG Build] Failed to restore HMSRuntimeProfile. " +
+                    $"Reason: {ex.Message}"
+                );
+            }
+            finally
+            {
+                _cachedProfile = null;
+                _profilePatched = false;
+            }
+#endif
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Public API
+        // ─────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Perform multiple builds synchronously on the main thread. Ensures
+        /// HMSRuntimeInfo.Profile is patched to the SGEditorConfig profile
+        /// during the builds, and restored afterward.
+        /// </summary>
+        /// <param name="setups">Build setups to execute.</param>
+        /// <param name="commonBuildPath">Root output folder.</param>
+        /// <param name="targetVersion">Semantic version to embed.</param>
+        /// <returns>List of local build results.</returns>
         public static List<SGLocalBuildResult> PerformMultipleBuilds(
             List<SGBuildSetup> setups,
             string commonBuildPath,
@@ -47,6 +165,9 @@ namespace SGUnitySDK.Editor.Versioning
         )
         {
             var buildResults = new List<SGLocalBuildResult>();
+
+            // Apply HMS profile patch once for the full batch.
+            ApplyRuntimeProfilePatch();
 
             try
             {
@@ -86,7 +207,7 @@ namespace SGUnitySDK.Editor.Versioning
                         });
 
                         Debug.LogError(
-                            $"Error building profile " +
+                            "Error building profile " +
                             $"{setup.profile.name}: {ex.Message}"
                         );
                     }
@@ -107,6 +228,8 @@ namespace SGUnitySDK.Editor.Versioning
             finally
             {
                 EditorUtility.ClearProgressBar();
+                // Always restore HMS profile patch.
+                RestoreRuntimeProfilePatch();
             }
 
             return buildResults;
@@ -115,6 +238,12 @@ namespace SGUnitySDK.Editor.Versioning
         /// <summary>
         /// Build one setup and zip its output synchronously.
         /// </summary>
+        /// <param name="setup">Build setup definition.</param>
+        /// <param name="commonBuildPath">Root output folder.</param>
+        /// <param name="targetVersion">Semantic version to embed.</param>
+        /// <param name="completed">Index of the current setup.</param>
+        /// <param name="totalSetups">Total number of setups.</param>
+        /// <returns>Local build result for this setup.</returns>
         public static SGLocalBuildResult BuildAndZipSetup(
             SGBuildSetup setup,
             string commonBuildPath,
@@ -177,7 +306,7 @@ namespace SGUnitySDK.Editor.Versioning
 
                     result.success = false;
                     result.errorMessage =
-                        $"Build failed for profile " +
+                        "Build failed for profile " +
                         $"{setup.profile.name}";
                     Debug.LogError(result.errorMessage);
 
@@ -232,7 +361,6 @@ namespace SGUnitySDK.Editor.Versioning
                         {
                             lastFilesDone = p.FilesDone;
                             lastBytes = p.BytesDone;
-                            // Debug.Log($"[ZIP] {p.FilesDone}/{p.FilesTotal}");
                         }
                     },
                     setLinuxExecBit: setExecBit
@@ -257,9 +385,17 @@ namespace SGUnitySDK.Editor.Versioning
             }
         }
 
+        // ─────────────────────────────────────────────────────────────────────
+        // Build helpers
+        // ─────────────────────────────────────────────────────────────────────
+
         /// <summary>
         /// Use Unity Build Pipeline with the given profile.
         /// </summary>
+        /// <param name="profile">Build profile to activate.</param>
+        /// <param name="outputPath">Full output path for the player.</param>
+        /// <param name="buildOptions">Additional build options.</param>
+        /// <returns>Build summary produced by the pipeline.</returns>
         private static BuildSummary BuildUsingProfile(
             BuildProfile profile,
             string outputPath,
@@ -281,6 +417,9 @@ namespace SGUnitySDK.Editor.Versioning
             return report.summary;
         }
 
+        /// <summary>
+        /// Returns the common base name: Product.vX_Y_Z (sanitized).
+        /// </summary>
         private static string GetBaseName(
             BuildProfile profile,
             string version
@@ -291,6 +430,9 @@ namespace SGUnitySDK.Editor.Versioning
             return $"{product}.v{ver}";
         }
 
+        /// <summary>
+        /// Returns the build output directory name.
+        /// </summary>
         private static string GetBuildFolderName(
             BuildProfile profile,
             string version
@@ -300,6 +442,9 @@ namespace SGUnitySDK.Editor.Versioning
                    $"{GetPlatformName(profile.GetBuildTargetInternal())}";
         }
 
+        /// <summary>
+        /// Returns the executable name, platform-aware.
+        /// </summary>
         private static string GetExecutableName(
             BuildProfile profile,
             string version
@@ -321,6 +466,9 @@ namespace SGUnitySDK.Editor.Versioning
             };
         }
 
+        /// <summary>
+        /// Maps Unity BuildTarget to human-readable platform name.
+        /// </summary>
         private static string GetPlatformName(BuildTarget target)
         {
             return target switch
@@ -333,17 +481,27 @@ namespace SGUnitySDK.Editor.Versioning
             };
         }
 
+        /// <summary>
+        /// Removes invalid filename characters.
+        /// </summary>
         private static string SanitizeFileName(string name)
         {
             var invalid = Path.GetInvalidFileNameChars();
             return string.Concat(name.Split(invalid));
         }
 
+        /// <summary>
+        /// Converts '1.2.3' into '1_2_3'.
+        /// </summary>
         private static string SanitizeVersion(string version)
         {
             return version.Replace('.', '_');
         }
 
+        /// <summary>
+        /// Resolves compression platform so the zipper can adjust
+        /// platform-specific details (e.g., chmod +x on Linux).
+        /// </summary>
         private static CompressionPlatform ResolveCompressionPlatform(
             BuildTarget target
         )
@@ -359,6 +517,9 @@ namespace SGUnitySDK.Editor.Versioning
             };
         }
 
+        /// <summary>
+        /// Deletes the builds directory if present.
+        /// </summary>
         public static void ClearBuildsDirectory(string path)
         {
             if (Directory.Exists(path))
