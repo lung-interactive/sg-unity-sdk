@@ -108,7 +108,7 @@ namespace SGUnitySDK
                     refresh_token = "dummy-refresh-token",
                     user = new HMSAuthenticatedUser()
                     {
-                        id = 300,
+                        id = "dummy-user-id",
                         email = "gMnV9@example.com",
                         username = "dummy-user",
                     }
@@ -129,7 +129,7 @@ namespace SGUnitySDK
                     refresh_token = "dummy-refresh-token",
                     user = new HMSAuthenticatedUser()
                     {
-                        id = 300,
+                        id = "dummy-user-id",
                         email = "gMnV9@example.com",
                         username = "dummy-user",
                     }
