@@ -212,7 +212,7 @@ namespace SGUnitySDK.Editor
             _labelVersionRemote.text = "-";
             try
             {
-                var response = await GameManagementRequest.To("latest-version").SendAsync();
+                var response = await GameManagementRequest.To("version").SendAsync();
                 if (!response.Success)
                 {
                     var errorBody = response.ReadErrorBody();
