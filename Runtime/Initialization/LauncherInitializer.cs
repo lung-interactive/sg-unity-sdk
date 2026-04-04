@@ -479,7 +479,7 @@ namespace SGUnitySDK
             {
                 internal const string Token = "dummy-token";
                 internal const string RefreshToken = "dummy-refresh-token";
-                internal const string UserId = "dummy-user-id";
+                internal const int UserId = 1;
                 internal const string Email = "gMnV9@example.com";
                 internal const string Username = "dummy-user";
             }
