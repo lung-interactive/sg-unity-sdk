@@ -11,7 +11,7 @@ namespace SGUnitySDK.Editor.Core.Singletons
     [FilePath("SGUnitySDK/SGEditorConfig", FilePathAttribute.Location.PreferencesFolder)]
     public partial class SGEditorConfig : ScriptableSingleton<SGEditorConfig>
     {
-        private static readonly string API_BASE_URL = "https://api.lung-sg/v1";
+        private static readonly string API_BASE_URL = "https://api.lung-sg.com/v1";
 
         [SerializeField] private string _gameDevelopmentToken;
         [SerializeField] private bool _shouldOverrideBaseUrl = false;
