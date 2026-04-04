@@ -1,0 +1,6 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <Style src="project://database/Assets/SGUnitySDK/Editor/Resources/Styles/Common_style.uss?fileID=7433441132597879392&amp;guid=6f1cf7892ff31374fbc43ebe464e850e&amp;type=3#Common_style"/>
+    <ui:VisualElement name="homologation-container" class="container" style="flex-grow: 0; align-items: flex-start; justify-content: flex-start; flex-direction: column; margin-bottom: 5px; background-color: rgb(29, 29, 29); border-top-left-radius: 5px; border-top-right-radius: 5px; border-bottom-right-radius: 5px; border-bottom-left-radius: 5px; padding: 10px;">
+        <ui:Label text="Awaiting the homologation process. At this point the version can be approved or returned to development." style="font-size: 11px; color: rgb(150, 150, 150);"/>
+    </ui:VisualElement>
+</ui:UXML>

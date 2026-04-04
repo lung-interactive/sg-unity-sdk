@@ -1,0 +1,6 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <ui:VisualElement name="approved-container" class="container" style="flex-direction: column; padding: 10px; background-color: rgb(29,29,29);">
+        <ui:Label text="Version Approved" style="font-size:14px; font-weight:600; margin-bottom:6px;" />
+        <ui:Label name="label-approved-message" text="This version has been approved and the development cycle for it is finished." style="font-size:11px; color: rgb(150,150,150);" />
+    </ui:VisualElement>
+</ui:UXML>

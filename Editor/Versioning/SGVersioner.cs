@@ -2,16 +2,20 @@ using UnityEngine;
 using UnityEditor;
 using System;
 using SGUnitySDK.Http;
-using SGUnitySDK.Editor.Http;
+using SGUnitySDK.Editor.Infrastructure.Http;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
-using SGUnitySDK.Editor.Utils;
 using System.Threading.Tasks;
 using HMSUnitySDK;
+using SGUnitySDK.Editor.Core.Entities;
+using SGUnitySDK.Editor.Core.Singletons;
+using SGUnitySDK.Editor.Core.Utils;
+using SGUnitySDK.Editor.Infrastructure;
 
 namespace SGUnitySDK.Editor.Versioning
 {
+    [Obsolete("SGVersioner is deprecated. Prefer the new use-cases for generation and upload; this helper will be removed in a future release.", false)]
     public static partial class SGVersioner
     {
         private class ReleaseState
@@ -26,7 +30,7 @@ namespace SGUnitySDK.Editor.Versioning
 
         private static HMSRuntimeProfile _originalRuntimeProfile;
 
-        // [MenuItem("Tools/SGUnitySDK/Versioning/Versionate and send to remote", false, 0)]
+        // [MenuItem("SGUnitySDK/Versioning/Versionate and send to remote", false, 0)]
         public static void StartVersioningProcess()
         {
             _ = PerformVersioningProcess();
@@ -80,8 +84,8 @@ namespace SGUnitySDK.Editor.Versioning
                 // Step 4: Prepare remote version
                 var remoteVersion = await ExecuteStep("Preparing remote version", () => PrepareRemoteVersion(state.versionReport.newVersion)) ?? throw new Exception("Failed to prepare remote version");
                 state.versionStartedRemotely = true;
-                state.remoteSemver = remoteVersion.Semver;
-                SGVersionLogger.Log($"Remote version prepared: {remoteVersion.Semver}");
+                state.remoteSemver = remoteVersion.Semver.Raw;
+                SGVersionLogger.Log($"Remote version prepared: {remoteVersion.Semver.Raw}");
 
                 // Step 5: Upload builds
                 var uploadSuccess = await ExecuteStep("Uploading builds", () => UploadBuildsToRemote(state.buildResults, remoteVersion));
@@ -142,7 +146,7 @@ namespace SGUnitySDK.Editor.Versioning
             try
             {
                 SGVersionLogger.Log("Validating game management token...");
-                var request = GameManagementRequest.To("/validate-token");
+                var request = GameDevelopmentRequest.To("/validate-token");
                 var response = await request.SendAsync();
 
                 if (!response.Success)
@@ -182,7 +186,7 @@ namespace SGUnitySDK.Editor.Versioning
                 };
             }
 
-            var gameManagementToken = SGEditorConfig.instance.GameManagementToken;
+            var gameManagementToken = SGEditorConfig.instance.GameDevelopmentToken;
             if (string.IsNullOrEmpty(gameManagementToken))
             {
                 return new ReleaseCondition
@@ -256,26 +260,32 @@ namespace SGUnitySDK.Editor.Versioning
             return await StartVersionWithRemote(version);
         }
 
-        private static async Awaitable<bool> UploadBuildsToRemote(
+        private static Awaitable<bool> UploadBuildsToRemote(
             List<SGLocalBuildResult> buildResults,
             VersionDTO remoteVersion
         )
         {
             SGVersionLogger.Log($"Uploading {buildResults.Count} builds to remote...");
-            try
+            // Run parallel uploads on threadpool and expose as Awaitable
+            var task = System.Threading.Tasks.Task.Run(async () =>
             {
-                var uploadTasks = buildResults.Select(build =>
-                    UploadSingleBuild(build, remoteVersion)).ToList();
+                try
+                {
+                    var uploadTasks = buildResults.Select(build =>
+                        UploadSingleBuild(build, remoteVersion)).ToList();
 
-                var results = await Task.WhenAll(uploadTasks);
+                    var results = await Task.WhenAll(uploadTasks).ConfigureAwait(false);
 
-                return results.All(result => result);
-            }
-            catch (Exception ex)
-            {
-                SGVersionLogger.LogError($"Failed during parallel uploads: {ex.Message}");
-                return false;
-            }
+                    return results.All(result => result);
+                }
+                catch (Exception ex)
+                {
+                    SGVersionLogger.LogError($"Failed during parallel uploads: {ex.Message}");
+                    return false;
+                }
+            });
+
+            return TaskAwaitableAdapter.FromTask(task);
         }
 
         private static async Task<bool> UploadSingleBuild(SGLocalBuildResult build, VersionDTO remoteVersion)
@@ -283,60 +293,19 @@ namespace SGUnitySDK.Editor.Versioning
             SGVersionLogger.Log($"Uploading build: {Path.GetFileName(build.path)}");
             try
             {
-                var request = GameManagementRequest.To("/start-build-upload", HttpMethod.Post);
-                var body = new StartBuildUploadDTO()
-                {
-                    Semver = remoteVersion.Semver,
-                    Platform = build.GetBuildPlatform(),
-                    ExecutableName = build.executableName,
-                    Filename = Path.GetFileName(build.path),
-                    DownloadSize = build.compression.sizeCompressed,
-                    InstalledSize = build.compression.sizeUncompressed,
-                    Host = FileHost.S3,
-                    OverrideExisting = true,
-                };
+                var entry = new SGVersionBuildEntry { build = build };
+                var useCase = EditorServiceProvider.Instance
+                    .GetService<Core.UseCases.UploadBuildUseCase>();
+                var updated = await useCase.ExecuteAsync(entry);
 
-                request.SetBody(body);
-                var response = await request.SendAsync();
-
-                if (!response.Success)
+                if (updated.uploaded)
                 {
-                    SGVersionLogger.LogError($"Failed to start build upload: {response.ReadErrorBody()}");
-                    return false;
+                    SGVersionLogger.Log($"Build uploaded: {build.path}");
+                    return true;
                 }
 
-                var responseBody = response.ReadBodyData<StartBuildUploadResponseDTO>();
-                var uploadToken = responseBody.UploadToken;
-                var signedURL = responseBody.SignedUrl;
-
-                var uploadSuccess = await S3Uploader.UploadFileToPresignedUrl(build.path, signedURL.Url);
-                if (!uploadSuccess)
-                {
-                    SGVersionLogger.LogError($"Failed to upload build file: {build.path}");
-                    return false;
-                }
-
-                var confirmRequest = GameManagementRequest.To("/confirm-build-upload", HttpMethod.Post)
-                    .SetBody(new
-                    {
-                        upload_token = uploadToken,
-                        semver = remoteVersion.Semver,
-                        platform = build.GetBuildPlatform(),
-                    });
-                var confirmResponse = await confirmRequest.SendAsync();
-
-                if (!confirmResponse.Success)
-                {
-                    SGVersionLogger.LogError($"Failed to confirm build upload:");
-                    var errorBody = confirmResponse.ReadErrorBody();
-                    foreach (var error in errorBody.Messages)
-                    {
-                        SGVersionLogger.LogError(error);
-                    }
-                    return false;
-                }
-
-                return true;
+                SGVersionLogger.LogError($"Upload failed for build: {build.path}. Error: {updated.uploadError}");
+                return false;
             }
             catch (Exception ex)
             {
@@ -345,18 +314,18 @@ namespace SGUnitySDK.Editor.Versioning
             }
         }
 
-        private static async Awaitable DiscardWorkingChanges()
+        private static Awaitable DiscardWorkingChanges()
         {
             SGVersionLogger.Log("Discarding all changes in working directory...");
             GitExecutor.DiscardAllChanges();
-            await Task.CompletedTask;
+            return TaskAwaitableAdapter.FromTask(System.Threading.Tasks.Task.CompletedTask);
         }
 
-        private static async Awaitable CleanBuildsDirectory()
+        private static Awaitable CleanBuildsDirectory()
         {
             SGVersionLogger.Log("Cleaning builds directory...");
             IOHelper.ClearDirectoryContents(SGEditorConfig.instance.BuildsDirectory);
-            await Task.CompletedTask;
+            return TaskAwaitableAdapter.FromTask(System.Threading.Tasks.Task.CompletedTask);
         }
 
         private static async Awaitable EndRemoteVersion(string version)
@@ -364,7 +333,7 @@ namespace SGUnitySDK.Editor.Versioning
             SGVersionLogger.Log($"Ending remote version {version}...");
             try
             {
-                var request = GameManagementRequest.To("/end-version", HttpMethod.Post);
+                var request = GameDevelopmentRequest.To("versions/end-preparation", HttpMethod.Post);
                 request.SetBody(new EndVersionDTO()
                 {
                     Semver = version,
@@ -497,8 +466,8 @@ namespace SGUnitySDK.Editor.Versioning
             SGVersionLogger.Log($"Starting remote version for {targetVersion}...");
             try
             {
-                var request = GameManagementRequest
-                    .To("/start-new-version", HttpMethod.Post)
+                var request = GameDevelopmentRequest
+                    .To("versions/start-new", HttpMethod.Post)
                     .SetBody(new StartGameVersionUpdateDTO()
                     {
                         VersionUpdateType = VersionUpdateType.Specific,
@@ -521,8 +490,8 @@ namespace SGUnitySDK.Editor.Versioning
         private static async Awaitable CancelVersionInPreparation()
         {
             SGVersionLogger.Log("Cancelling any version in preparation...");
-            var request = GameManagementRequest
-                .To("/cancel-version-in-preparation", HttpMethod.Delete);
+            var request = GameDevelopmentRequest
+                .To("versions/cancel-in-preparation", HttpMethod.Delete);
 
             await request.SendAsync();
         }

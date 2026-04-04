@@ -1,9 +1,11 @@
 using System.IO;
 using System.Text.RegularExpressions;
-using SGUnitySDK.Editor.Http;
+using SGUnitySDK.Editor.Infrastructure.Http;
 using SGUnitySDK.Http;
 using UnityEditor;
 using UnityEngine;
+using SGUnitySDK.Editor.Core.Entities;
+using SGUnitySDK.Editor.Core.Singletons;
 
 namespace SGUnitySDK.Editor.Versioning
 {
@@ -12,12 +14,12 @@ namespace SGUnitySDK.Editor.Versioning
         private const string VersionKeyPattern = @"""version""\s*:\s*""(?<version>\d+\.\d+\.\d+[^""]*)""";
 
         public static async Awaitable<VersionDTO> StartVersionWithRemote(
-            VersioningProcess process,
+            DevelopmentProcess process,
             SemVerType targetVersion
         )
         {
-            var request = GameManagementRequest
-                .To("/start-new-version", SGUnitySDK.Http.HttpMethod.Post)
+            var request = GameDevelopmentRequest
+                .To("versions/start-new", SGUnitySDK.Http.HttpMethod.Post)
                 .SetBody(new StartGameVersionUpdateDTO()
                 {
                     VersionUpdateType = VersionUpdateType.Specific,
@@ -39,11 +41,11 @@ namespace SGUnitySDK.Editor.Versioning
         }
 
         public static async Awaitable CancelVersionPreparation(
-            VersioningProcess process
+            DevelopmentProcess process
         )
         {
-            var request = GameManagementRequest
-                .To("/cancel-version-in-preparation", HttpMethod.Delete);
+            var request = GameDevelopmentRequest
+                .To("versions/cancel-in-preparation", HttpMethod.Delete);
 
             var response = await request.SendAsync();
 
@@ -59,7 +61,7 @@ namespace SGUnitySDK.Editor.Versioning
         }
 
         public static async Awaitable CloseRemoteVersion(
-            VersioningProcess process,
+            DevelopmentProcess process,
             SemVerType targetVersion
         )
         {
@@ -67,7 +69,7 @@ namespace SGUnitySDK.Editor.Versioning
             SGVersionLogger.Log($"Closing remote version {version}...");
             try
             {
-                var request = GameManagementRequest.To("/end-version", HttpMethod.Post);
+                var request = GameDevelopmentRequest.To("versions/end-preparation", HttpMethod.Post);
                 request.SetBody(new EndVersionDTO()
                 {
                     Semver = version,

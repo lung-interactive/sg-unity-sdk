@@ -5,9 +5,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using SGUnitySDK.Editor.Versioning;
 using SGUnitySDK.Http;
-using SGUnitySDK.Editor.Http;
+using SGUnitySDK.Editor.Infrastructure.Http;
 using UnityEditor;
 using UnityEngine;
+using SGUnitySDK.Editor.Core.Entities;
+using SGUnitySDK.Editor.Core.Utils;
 
 namespace SGUnitySDK.Editor
 {
@@ -44,7 +46,7 @@ namespace SGUnitySDK.Editor
                 // 1) Start upload session
                 progress.Report("Starting upload session...", 0.03f);
 
-                var startReq = GameManagementRequest.To("/start-build-upload", HttpMethod.Post);
+                var startReq = GameDevelopmentRequest.To("/start-build-upload", HttpMethod.Post);
                 var body = new StartBuildUploadDTO
                 {
                     Semver = remoteSemver,
@@ -91,7 +93,7 @@ namespace SGUnitySDK.Editor
                 progress.Report("Finalizing upload...", 0.85f);
 
                 // 4) Confirm upload
-                var confirmReq = GameManagementRequest.To("/confirm-build-upload", HttpMethod.Post)
+                var confirmReq = GameDevelopmentRequest.To("/confirm-build-upload", HttpMethod.Post)
                     .SetBody(new
                     {
                         upload_token = uploadToken,
@@ -128,6 +130,19 @@ namespace SGUnitySDK.Editor
                 Debug.LogError($"Upload failed: {ex.Message}");
                 return entry;
             }
+        }
+
+        /// <summary>
+        /// Awaitable wrapper for <see cref="UploadBuildZipAsync"/> so callers using the project's
+        /// Awaitable abstraction can await this workflow.
+        /// </summary>
+        public static Awaitable<SGVersionBuildEntry> UploadBuildZipAwaitable(
+            SGVersionBuildEntry entry,
+            string remoteSemver,
+            CancellationToken ct = default
+        )
+        {
+            return TaskAwaitableAdapter.FromTask(UploadBuildZipAsync(entry, remoteSemver, ct));
         }
 
         private static string ComputeSha256(string filePath, Action<float> onProgress)

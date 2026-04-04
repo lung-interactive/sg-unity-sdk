@@ -9,6 +9,9 @@ using UnityEditor;
 using UnityEditor.Build.Profile;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
+using SGUnitySDK.Editor.Core.Entities;
+using SGUnitySDK.Editor.Core.Singletons;
+using HMSUnitySDK.Editor;
 
 namespace SGUnitySDK.Editor.Versioning
 {
@@ -61,7 +64,7 @@ namespace SGUnitySDK.Editor.Versioning
 #if UNITY_EDITOR
             try
             {
-                var cfg = SGUnitySDK.Editor.SGEditorConfig.instance;
+                var cfg = SGEditorConfig.instance;
                 var selectedProfile = cfg != null ? cfg.RuntimeProfile : null;
 
                 var runtimeInfo = HMSRuntimeInfo.GetFromResources();

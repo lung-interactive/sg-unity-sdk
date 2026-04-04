@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 using System.Net.Http;
+using SGUnitySDK.Editor.Core.Utils;
 
 namespace SGUnitySDK.Editor
 {
@@ -61,6 +62,15 @@ namespace SGUnitySDK.Editor
                 Debug.LogError($"Error during upload: {ex.Message}");
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Awaitable wrapper for <see cref="UploadFileToPresignedUrl"/> so Awaitable-based
+        /// callers can await uploads without changing existing Task-based implementation.
+        /// </summary>
+        public static Awaitable<bool> UploadFileToPresignedUrlAwaitable(string filePath, string presignedUrl)
+        {
+            return TaskAwaitableAdapter.FromTask(UploadFileToPresignedUrl(filePath, presignedUrl));
         }
 
         private static string GetContentType(string fileExtension)
