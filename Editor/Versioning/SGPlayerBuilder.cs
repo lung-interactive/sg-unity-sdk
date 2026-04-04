@@ -169,6 +169,31 @@ namespace SGUnitySDK.Editor.Versioning
         {
             var buildResults = new List<SGLocalBuildResult>();
 
+            if (setups == null || setups.Count == 0)
+            {
+                Debug.LogWarning("No build setups were provided.");
+                return buildResults;
+            }
+
+            if (HasPendingCompilationIssues(out var compilationMessage))
+            {
+                Debug.LogError(compilationMessage);
+
+                foreach (var setup in setups)
+                {
+                    buildResults.Add(new SGLocalBuildResult
+                    {
+                        success = false,
+                        productName = setup?.profile != null
+                            ? setup.profile.name
+                            : "Unknown Profile",
+                        errorMessage = compilationMessage
+                    });
+                }
+
+                return buildResults;
+            }
+
             // Apply HMS profile patch once for the full batch.
             ApplyRuntimeProfilePatch();
 
@@ -308,9 +333,18 @@ namespace SGUnitySDK.Editor.Versioning
                     EditorUtility.ClearProgressBar();
 
                     result.success = false;
+                    string compilerHint = summary.totalErrors > 0
+                        ? " Scripts had compiler errors."
+                        : string.Empty;
+
                     result.errorMessage =
                         "Build failed for profile " +
-                        $"{setup.profile.name}";
+                        $"{setup.profile.name}. " +
+                        $"Result: {summary.result}. " +
+                        $"Errors: {summary.totalErrors}. " +
+                        $"Warnings: {summary.totalWarnings}." +
+                        compilerHint +
+                        " Check Unity Console for full details.";
                     Debug.LogError(result.errorMessage);
 
                     return result;
@@ -418,6 +452,35 @@ namespace SGUnitySDK.Editor.Versioning
 
             var report = BuildPipeline.BuildPlayer(options);
             return report.summary;
+        }
+
+        /// <summary>
+        /// Validates whether the editor is in a safe state to start player
+        /// builds. Returns false only when compilation is idle and there are
+        /// no pending script compilation errors.
+        /// </summary>
+        /// <param name="message">Human-readable reason when build should not start.</param>
+        /// <returns>True when build should be blocked by compilation state.</returns>
+        private static bool HasPendingCompilationIssues(out string message)
+        {
+            if (EditorApplication.isCompiling)
+            {
+                message =
+                    "Build generation aborted: Unity is still compiling scripts. " +
+                    "Wait for compilation to finish and try again.";
+                return true;
+            }
+
+            if (EditorUtility.scriptCompilationFailed)
+            {
+                message =
+                    "Build generation aborted: project has script compiler errors. " +
+                    "Fix compiler errors in Unity Console before generating builds.";
+                return true;
+            }
+
+            message = string.Empty;
+            return false;
         }
 
         /// <summary>

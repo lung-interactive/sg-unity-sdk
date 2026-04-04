@@ -143,7 +143,7 @@ namespace SGUnitySDK.Editor.Presentation.Elements
                 _errorContainer.style.display = DisplayStyle.Flex;
             }
 
-            if (!isZipValid)
+            if (_entry.build.success && !isZipValid)
             {
                 var zipError = new Label("Zip file is missing or corrupted");
                 zipError.AddToClassList("build-error");
