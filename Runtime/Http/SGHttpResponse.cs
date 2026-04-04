@@ -126,7 +126,31 @@ namespace SGUnitySDK.Http
         {
             try
             {
-                return JsonConvert.DeserializeObject<SGErrorBody>(_contents);
+                if (string.IsNullOrWhiteSpace(_contents))
+                {
+                    return new SGErrorBody
+                    {
+                        StatusCode = (int)_responseCode,
+                        Messages = Array.Empty<string>(),
+                        Timestamp = string.Empty,
+                        Path = string.Empty,
+                    };
+                }
+
+                var errorBody = JsonConvert.DeserializeObject<SGErrorBody>(_contents);
+                if (errorBody == null)
+                {
+                    return new SGErrorBody
+                    {
+                        StatusCode = (int)_responseCode,
+                        Messages = Array.Empty<string>(),
+                        Timestamp = string.Empty,
+                        Path = string.Empty,
+                    };
+                }
+
+                errorBody.Messages ??= Array.Empty<string>();
+                return errorBody;
             }
             catch (System.Exception ex)
             {

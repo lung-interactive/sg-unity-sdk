@@ -1,10 +1,10 @@
 {
   "name": "com.lung-interactive.sg-unity-sdk",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "displayName": "StreamingGames Unity SDK",
   "description": "A Unity package for the StreamingGames Unity SDK.",
-  "unity": "6000.1",
-  "unityRelease": "9f1",
+  "unity": "6000.3",
+  "unityRelease": "11f1",
   "dependencies": {
     "com.itisnajim.socketiounity": "^1.1.5",
     "com.veriorpies.parrelsync": "^1.5.2",
