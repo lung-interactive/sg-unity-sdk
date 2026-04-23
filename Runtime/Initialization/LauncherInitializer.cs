@@ -7,7 +7,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.Scripting;
 
-namespace SGUnitySDK
+namespace SGUnitySDK.Initialization
 {
     /// <summary>
     /// Boots the Unity client, connects to the external launcher via interop,
@@ -73,6 +73,7 @@ namespace SGUnitySDK
 
         private HMSLauncherInteropsService _launcherInterops;
         private HMSAuth _hmsAuth;
+        private InitSettingsService _initSettings;
 
         #endregion
 
@@ -142,6 +143,28 @@ namespace SGUnitySDK
         {
             _launcherInterops = HMSLocator.Get<HMSLauncherInteropsService>();
             _hmsAuth = HMSLocator.Get<HMSAuth>();
+            _initSettings = TryResolveInitSettingsService();
+        }
+
+        /// <summary>
+        /// Resolves initialization settings service from HMSLocator.
+        /// </summary>
+        /// <returns>
+        /// Service instance when available; otherwise null.
+        /// </returns>
+        private static InitSettingsService TryResolveInitSettingsService()
+        {
+            try
+            {
+                return HMSLocator.Get<InitSettingsService>();
+            }
+            catch (Exception ex)
+            {
+                SGLogger.LogWarning(string.Format(
+                    S.Errors.InitSettingsServiceMissingWarn,
+                    ex.Message));
+                return null;
+            }
         }
 
         /// <summary>
@@ -310,10 +333,9 @@ namespace SGUnitySDK
             var runtimeInfo = HMSRuntimeInfo.Get();
             if (runtimeInfo.Profile.RuntimeMode != HMSRuntimeMode.Editor) return;
 
-            var dummySocket =
-                _launcherInterops.Interops.Socket as HMSDummyLauncherInteropsSocket;
 
-            if (dummySocket == null)
+            if (_launcherInterops.Interops.Socket
+                is not HMSDummyLauncherInteropsSocket dummySocket)
             {
                 SGLogger.LogWarning(S.Errors.DummyMissingWarn);
                 return;
@@ -458,6 +480,9 @@ namespace SGUnitySDK
                     "Failed connecting to launcher";
                 internal const string AuthFetchFailed =
                     "Failed to retrieve authentication data";
+                internal const string InitSettingsServiceMissingWarn =
+                    "InitSettingsService could not be resolved from HMSLocator: " +
+                    "{0}. Continuing without launcher config settings.";
                 internal const string PrefabMissingWarn =
                     "Initialization prefab not found. Created a minimal " +
                     "fallback object.";

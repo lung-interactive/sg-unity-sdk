@@ -348,7 +348,8 @@ namespace SGUnitySDK.Editor.Presentation.Windows
         /// </summary>
         private void OnDisable()
         {
-            _configViewModel.Persist();
+            _listBuildProfiles?.Unbind();
+            _configViewModel?.Persist();
             EditorApplication.playModeStateChanged -=
                 OnPlayModeStateChanged;
         }
@@ -358,7 +359,21 @@ namespace SGUnitySDK.Editor.Presentation.Windows
         /// </summary>
         private void SetupBuildProfilesList()
         {
+            if (_serializedConfig == null || _listBuildProfiles == null)
+            {
+                return;
+            }
+
+            _serializedConfig.UpdateIfRequiredOrScript();
             var property = _serializedConfig.FindProperty("_buildSetups");
+
+            if (property == null || !property.isArray)
+            {
+                Debug.LogWarning("SGPanelWindow could not bind _buildSetups property.");
+                return;
+            }
+
+            _listBuildProfiles.Unbind();
             _listBuildProfiles.BindProperty(property);
             _listBuildProfiles.reorderable = true;
             _listBuildProfiles.reorderMode = ListViewReorderMode.Animated;

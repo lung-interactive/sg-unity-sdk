@@ -9,7 +9,7 @@
                 <ui:Label text="API" class="label-header" />
                 <ui:VisualElement name="container-token" style="flex-grow: 1; flex-direction: column; -unity-text-align: middle-left; padding-bottom: 5px; margin-top: 5px;">
                     <ui:Label text="Game Management Token" name="label-token-label" style="-unity-font-style: bold; margin-bottom: 5px;" />
-                    <ui:TextField name="field-game-management-token" multiline="true" vertical-scroller-visibility="Auto" enabled="true" placeholder-text="The Game management token acquired in the Streaming Games Admin system." class="text-area" style="flex-grow: 1; margin-left: 0; margin-right: 0;" />
+                    <ui:TextField name="field-game-management-token" multiline="false" enabled="true" placeholder-text="The Game management token acquired in the Streaming Games Admin system." style="margin-left: 0; margin-right: 0;" />
                 </ui:VisualElement>
                 <ui:VisualElement name="container-base-url" style="flex-grow: 1; flex-direction: column; -unity-text-align: middle-left; padding-top: 5px; padding-bottom: 5px;">
                     <ui:Label text="Base URL" name="label-token-label" style="-unity-font-style: bold; margin-bottom: 5px;" />
