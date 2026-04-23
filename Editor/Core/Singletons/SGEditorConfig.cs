@@ -8,7 +8,7 @@ using SGUnitySDK.Editor.Core.Entities;
 
 namespace SGUnitySDK.Editor.Core.Singletons
 {
-    [FilePath("SGUnitySDK/SGEditorConfig", FilePathAttribute.Location.PreferencesFolder)]
+    [FilePath("UserSettings/SGUnitySDK/SGEditorConfig.asset", FilePathAttribute.Location.ProjectFolder)]
     public partial class SGEditorConfig : ScriptableSingleton<SGEditorConfig>
     {
         private static readonly string API_BASE_URL = "https://api.lung-sg.com/v1";

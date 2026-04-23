@@ -20,6 +20,8 @@ namespace SGUnitySDK.Editor.Presentation.Windows
     public class SGPanelWindow : EditorWindow
     {
         private static readonly string TemplateName = "SGPanelWindow";
+        private static string LastActiveTabPrefKey =>
+            $"SGUnitySDK.SGBuilderWindow_LastActiveTab::{Application.dataPath}";
         private static SGPanelWindow _window;
 
         /// <summary>
@@ -170,11 +172,11 @@ namespace SGUnitySDK.Editor.Presentation.Windows
             _containerMain.style.flexGrow = 1;
 
             _tabView = _containerMain.Q<TabView>("container-main");
-            int lastActiveTabIndex = EditorPrefs.GetInt("SGBuilderWindow_LastActiveTab", 0);
+            int lastActiveTabIndex = EditorPrefs.GetInt(LastActiveTabPrefKey, 0);
             _tabView.selectedTabIndex = lastActiveTabIndex;
             _tabView.activeTabChanged += (old, current) =>
             {
-                EditorPrefs.SetInt("SGBuilderWindow_LastActiveTab", _tabView.selectedTabIndex);
+                EditorPrefs.SetInt(LastActiveTabPrefKey, _tabView.selectedTabIndex);
             };
 
             // Development Tab Elements

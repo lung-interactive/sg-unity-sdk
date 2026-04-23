@@ -11,6 +11,8 @@ namespace SGUnitySDK.Editor.Presentation.Elements
     public class AcceptVersionStepElement : DevelopmentStepElement
     {
         private static readonly string TemplateName = "SGProcessStep1_DefineTargetVersion";
+        private static string IncrementTypePrefKey =>
+            $"SGUnitySDK.DefineTargetVersionStepElement_IncrementType::{Application.dataPath}";
         public override DevelopmentStep Step => DevelopmentStep.AcceptVersion;
 
         private readonly TemplateContainer _containerMain;
@@ -29,7 +31,7 @@ namespace SGUnitySDK.Editor.Presentation.Elements
 
             _containerSateDefining = _containerMain.Q<VisualElement>("container-state-defining");
 
-            int incrementTypeInt = EditorPrefs.GetInt("DefineTargetVersionStepElement_IncrementType", 1);
+            int incrementTypeInt = EditorPrefs.GetInt(IncrementTypePrefKey, 1);
             _fieldIncrementVersionType = _containerMain.Q<EnumField>("field-increment-version-type");
             _fieldIncrementVersionType.SetValueWithoutNotify((VersionUpdateType)incrementTypeInt);
             _fieldIncrementVersionType.RegisterValueChangedCallback(OnIncrementVersionTypeChanged);
@@ -69,7 +71,7 @@ namespace SGUnitySDK.Editor.Presentation.Elements
         private void OnIncrementVersionTypeChanged(ChangeEvent<Enum> evt)
         {
             var incrementType = (VersionUpdateType)evt.newValue;
-            EditorPrefs.SetInt("DefineTargetVersionStepElement_IncrementType", (int)incrementType);
+            EditorPrefs.SetInt(IncrementTypePrefKey, (int)incrementType);
             var isSpecific = incrementType == VersionUpdateType.Specific;
             _fieldCustomVersion.style.display = isSpecific ? DisplayStyle.Flex : DisplayStyle.None;
         }
