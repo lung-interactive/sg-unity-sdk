@@ -1,6 +1,7 @@
 using UnityEngine.UIElements;
 using UnityEngine;
 using System;
+using System.Threading;
 using SGUnitySDK.Editor.Core.Singletons;
 using SGUnitySDK.Editor.Presentation.Elements;
 using UnityEditor;
@@ -74,7 +75,6 @@ namespace SGUnitySDK.Editor.Presentation.Elements
                 try
                 {
                     await _controller.AcceptDevelopmentVersionAwaitable();
-                    _processState.SetStep(DevelopmentStep.Development);
                     UpdateStepDisplay();
                 }
                 catch (Exception ex)
@@ -155,8 +155,34 @@ namespace SGUnitySDK.Editor.Presentation.Elements
                         bool ok = await _viewModel.SendCurrentVersionToHomologationAsync();
                         if (ok)
                         {
-                            _processState.SetStep(DevelopmentStep.Homologation);
-                            EditorUtility.DisplayDialog("Send to homologation", "Version sent to homologation.", "OK");
+                            EditorUtility.DisplayDialog(
+                                "Send to homologation",
+                                "Request accepted. Waiting for asynchronous transition.",
+                                "OK");
+
+                            bool transitioned = await _viewModel
+                                .WaitForHomologationTransitionAsync(
+                                    TimeSpan.FromSeconds(5),
+                                    TimeSpan.FromMinutes(2),
+                                    CancellationToken.None);
+
+                            if (transitioned)
+                            {
+                                EditorUtility.DisplayDialog(
+                                    "Send to homologation",
+                                    "Version transitioned to homologation.",
+                                    "OK");
+                            }
+                            else
+                            {
+                                _processState.Process.ClearHomologationRequestMarker();
+                                EditorUtility.DisplayDialog(
+                                    "Send to homologation",
+                                    "Request accepted but transition is still processing. Use sync to refresh status.",
+                                    "OK");
+                            }
+
+                            UpdateStepDisplay();
                         }
                         else
                         {
@@ -227,7 +253,9 @@ namespace SGUnitySDK.Editor.Presentation.Elements
 
                 // Only show the 'Send to homologation' button when all builds
                 // were uploaded AND the current step is Development.
-                _buttonSendToHomologation.style.display = (canShow && step == DevelopmentStep.Development)
+                bool pendingHomologation = _processState.HasPendingHomologationRequest();
+                _buttonSendToHomologation.style.display =
+                    (canShow && step == DevelopmentStep.Development && !pendingHomologation)
                     ? DisplayStyle.Flex : DisplayStyle.None;
             }
 

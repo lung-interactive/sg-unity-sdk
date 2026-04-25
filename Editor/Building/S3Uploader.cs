@@ -1,20 +1,21 @@
-using Amazon;
-using Amazon.S3;
-using Amazon.S3.Transfer;
 using System;
 using System.IO;
 using System.Net;
 using System.Threading.Tasks;
-using UnityEditor;
 using UnityEngine;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using SGUnitySDK.Editor.Core.Utils;
 
 namespace SGUnitySDK.Editor
 {
     public static class S3Uploader
     {
-        public static async Task<bool> UploadFileToPresignedUrl(string filePath, string presignedUrl)
+        public static async Task<bool> UploadFileToPresignedUrl(
+            string filePath,
+            string presignedUrl,
+            string contentType = null,
+            int maxAttempts = 3)
         {
             try
             {
@@ -24,38 +25,62 @@ namespace SGUnitySDK.Editor
                     return false;
                 }
 
-                byte[] fileBytes;
-                try
+                if (maxAttempts < 1)
                 {
-                    fileBytes = File.ReadAllBytes(filePath);
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogError($"Failed to read file {filePath}: {ex.Message}");
-                    return false;
+                    maxAttempts = 1;
                 }
 
-                using (var httpClient = new HttpClient())
-                using (var content = new ByteArrayContent(fileBytes))
+                using (var httpClient = new HttpClient { Timeout = TimeSpan.FromMinutes(30) })
                 {
-                    // Configura o content type apropriado para o arquivo
-                    string contentType = GetContentType(Path.GetExtension(filePath));
-                    content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
-
-                    // Configura o método PUT (que é o padrão para uploads S3 com URL pré-assinada)
-                    using (var response = await httpClient.PutAsync(presignedUrl, content))
+                    for (int attempt = 0; attempt < maxAttempts; attempt++)
                     {
-                        if (!response.IsSuccessStatusCode)
+                        using (var fileStream = new FileStream(
+                            filePath,
+                            FileMode.Open,
+                            FileAccess.Read,
+                            FileShare.Read,
+                            bufferSize: 81920,
+                            useAsync: true))
+                        using (var content = new StreamContent(fileStream))
                         {
-                            string responseContent = await response.Content.ReadAsStringAsync();
-                            Debug.LogError($"Upload failed. Status: {response.StatusCode}, Response: {responseContent}");
-                            return false;
+                            string resolvedContentType = string.IsNullOrEmpty(contentType)
+                                ? GetContentType(Path.GetExtension(filePath))
+                                : contentType;
+                            content.Headers.ContentType = new MediaTypeHeaderValue(
+                                resolvedContentType);
+
+                            using (var response = await httpClient.PutAsync(
+                                presignedUrl,
+                                content))
+                            {
+                                if (response.IsSuccessStatusCode)
+                                {
+                                    Debug.Log(
+                                        $"Successfully uploaded {Path.GetFileName(filePath)} to storage");
+                                    return true;
+                                }
+
+                                string responseContent = await response.Content.ReadAsStringAsync();
+                                Debug.LogError(
+                                    $"Upload failed (attempt {attempt + 1}/{maxAttempts}). " +
+                                    $"Status: {response.StatusCode}, Response: {responseContent}");
+
+                                bool canRetry = attempt < maxAttempts - 1 &&
+                                    IsRetryableStatusCode(response.StatusCode);
+                                if (!canRetry)
+                                {
+                                    return false;
+                                }
+                            }
+
+                            int delayMs = CalculateBackoffDelay(attempt);
+                            await Task.Delay(delayMs);
                         }
 
-                        Debug.Log($"Successfully uploaded {Path.GetFileName(filePath)} to S3");
-                        return true;
                     }
                 }
+
+                return false;
             }
             catch (Exception ex)
             {
@@ -71,6 +96,12 @@ namespace SGUnitySDK.Editor
         public static Awaitable<bool> UploadFileToPresignedUrlAwaitable(string filePath, string presignedUrl)
         {
             return TaskAwaitableAdapter.FromTask(UploadFileToPresignedUrl(filePath, presignedUrl));
+        }
+
+        private static bool IsRetryableStatusCode(HttpStatusCode statusCode)
+        {
+            int code = (int)statusCode;
+            return code == 408 || code == 429 || code >= 500;
         }
 
         private static string GetContentType(string fileExtension)

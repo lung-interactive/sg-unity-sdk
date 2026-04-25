@@ -23,10 +23,12 @@ namespace SGUnitySDK.Editor.Core.Repositories
         /// </summary>
         /// <param name="filePath">Absolute local path of the file to upload.</param>
         /// <param name="presignedUrl">Presigned URL for file transfer.</param>
+        /// <param name="contentType">Expected content type contract from signed URL.</param>
         /// <returns>True if upload succeeded; otherwise false.</returns>
         Task<bool> UploadFileToPresignedUrlAsync(
             string filePath,
-            string presignedUrl);
+            string presignedUrl,
+            string contentType = null);
 
         /// <summary>
         /// Confirms upload completion in the backend.

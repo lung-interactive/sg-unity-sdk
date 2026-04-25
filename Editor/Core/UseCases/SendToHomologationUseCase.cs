@@ -59,13 +59,8 @@ namespace SGUnitySDK.Editor.Core.UseCases
                     var process = DevelopmentProcess.instance;
                     if (process != null)
                     {
-                        process.StartedInRemote = true;
-                        process.RemoteSemver = version.Semver.Raw;
                         process.CurrentVersion = version;
-
-                        // Advance the development step to Homologation so the
-                        // UI and other systems reflect the new state.
-                        process.SetStep(DevelopmentStep.Homologation);
+                        process.MarkHomologationRequested(version.Semver.Raw);
                     }
                 }
                 catch (Exception ex)

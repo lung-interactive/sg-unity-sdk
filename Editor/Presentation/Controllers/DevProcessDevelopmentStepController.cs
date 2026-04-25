@@ -68,22 +68,16 @@ namespace SGUnitySDK.Editor.Presentation.Controllers
         {
             try
             {
-                var currentVersion = await _viewModel.FetchUnderDevelopmentVersionAsync();
-                if (currentVersion == null)
-                {
-                    OnInfo?.Invoke("No version available to accept.");
-                    return;
-                }
-
-                var accepted = await _viewModel.AcceptDevelopmentVersionAsync("Accepted via Unity Editor");
+                var accepted = await _viewModel.AcceptDevelopmentVersionAsync(
+                    "SDK pipeline started for build upload.");
                 if (accepted)
                 {
-                    OnInfo?.Invoke("Version accepted.");
+                    OnInfo?.Invoke("Version accepted and acknowledged.");
                     LoadDevelopmentVersion();
                 }
                 else
                 {
-                    OnError?.Invoke("Failed to accept version remotely.");
+                    OnInfo?.Invoke("No version available to accept/acknowledge.");
                 }
             }
             catch (Exception ex)

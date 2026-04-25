@@ -26,7 +26,7 @@ namespace SGUnitySDK.Editor.Core.Singletons
         [SerializeField]
         private bool _startedInRemote = false;
 
-        // NEW: semver da versão aberta no backend (Start Version In Remote)
+        // Semver currently tracked by the remote development workflow.
         [SerializeField]
         private string _remoteSemver = null;
 
@@ -37,6 +37,10 @@ namespace SGUnitySDK.Editor.Core.Singletons
         // Metadata for the current version
         [SerializeField]
         private string _currentVersionMetadataJson = null;
+
+        // Timestamp when send-to-homologation was requested (Unix seconds)
+        [SerializeField]
+        private long _homologationRequestUnixTimestamp = 0;
 
         [SerializeField]
         private List<SGVersionBuildEntry> _versionBuilds = new();
@@ -138,6 +142,37 @@ namespace SGUnitySDK.Editor.Core.Singletons
         }
 
         /// <summary>
+        /// Gets the timestamp when homologation was requested.
+        /// </summary>
+        public System.DateTime? HomologationRequestedAt =>
+            _homologationRequestUnixTimestamp <= 0
+                ? (System.DateTime?)null
+                : System.DateTimeOffset.FromUnixTimeSeconds(
+                    _homologationRequestUnixTimestamp).DateTime;
+
+        /// <summary>
+        /// Marks that homologation was requested for the current version.
+        /// </summary>
+        /// <param name="semver">Version semver associated with the request.</param>
+        public void MarkHomologationRequested(string semver)
+        {
+            _startedInRemote = true;
+            _remoteSemver = semver;
+            _homologationRequestUnixTimestamp =
+                System.DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            Persist();
+        }
+
+        /// <summary>
+        /// Clears pending homologation request marker.
+        /// </summary>
+        public void ClearHomologationRequestMarker()
+        {
+            _homologationRequestUnixTimestamp = 0;
+            Persist();
+        }
+
+        /// <summary>
         /// Clears the list of version builds and optionally deletes associated files.
         /// </summary>
         /// <param name="deleteFiles">If true, deletes the builds directory and its contents.</param>
@@ -180,13 +215,22 @@ namespace SGUnitySDK.Editor.Core.Singletons
         /// <param name="step">The step to set.</param>
         public void SetStep(DevelopmentStep step)
         {
+            var previousStep = _currentStep;
             _currentStep = step;
 
             // When entering active development, clear any previous build records
             // to ensure the build registry reflects the new development lifecycle.
-            if (_currentStep == DevelopmentStep.Development)
+            if (previousStep != DevelopmentStep.Development &&
+                _currentStep == DevelopmentStep.Development)
             {
                 ClearVersionBuilds(true);
+            }
+
+            if (_currentStep == DevelopmentStep.Homologation ||
+                _currentStep == DevelopmentStep.Approved ||
+                _currentStep == DevelopmentStep.Canceled)
+            {
+                _homologationRequestUnixTimestamp = 0;
             }
 
             StepChanged?.Invoke(_currentStep);
@@ -244,6 +288,7 @@ namespace SGUnitySDK.Editor.Core.Singletons
             _startedInRemote = false;
             _currentVersionJson = null;
             _currentVersionMetadataJson = null;
+            _homologationRequestUnixTimestamp = 0;
             // Clear build entries and delete associated files when resetting the process.
             ClearVersionBuilds(true);
         }

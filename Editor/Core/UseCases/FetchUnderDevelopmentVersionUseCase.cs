@@ -8,7 +8,9 @@ using UnityEngine;
 namespace SGUnitySDK.Editor.Core.UseCases
 {
     /// <summary>
-    /// Use case for retrieving the first version in the 'UnderDevelopment' state from the remote server.
+    /// Use case for retrieving the next actionable version for the
+    /// development pipeline. Prioritizes a version in preparation and
+    /// falls back to under-development when needed.
     /// </summary>
     public class FetchUnderDevelopmentVersionUseCase
     {
@@ -26,14 +28,19 @@ namespace SGUnitySDK.Editor.Core.UseCases
         }
 
         /// <summary>
-        /// Retrieves the first version in the 'UnderDevelopment' state from the remote server.
+        /// Retrieves the first actionable version from the remote server.
         /// </summary>
         /// <returns>The version entity if found; otherwise, null.</returns>
         public async Task<VersionDTO> ExecuteAsync()
         {
-            // Fetches the first version in 'UnderDevelopment' state from the remote service.
-            var version = await _remoteVersionService.GetFirstUnderDevelopmentVersionAsync();
-            return version;
+            var inPreparation = await _remoteVersionService.GetVersionInPreparationAsync();
+            if (inPreparation != null)
+            {
+                return inPreparation;
+            }
+
+            var underDevelopment = await _remoteVersionService.GetFirstUnderDevelopmentVersionAsync();
+            return underDevelopment;
         }
 
         /// <summary>

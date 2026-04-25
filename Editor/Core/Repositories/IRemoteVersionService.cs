@@ -10,6 +10,13 @@ namespace SGUnitySDK.Editor.Core.Repositories
     public interface IRemoteVersionService
     {
         /// <summary>
+        /// Retrieves the version currently in preparation
+        /// (awaiting development acknowledgment).
+        /// </summary>
+        /// <returns>The version in preparation when available; otherwise null.</returns>
+        Awaitable<VersionDTO> GetVersionInPreparationAsync();
+
+        /// <summary>
         /// Retrieves the version currently marked as current in the backend.
         /// </summary>
         /// <returns>Current version when available; otherwise null.</returns>

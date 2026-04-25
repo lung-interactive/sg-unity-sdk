@@ -12,6 +12,13 @@ namespace SGUnitySDK.Editor.Infrastructure
     public class RemoteVersionService : IRemoteVersionService
     {
         /// <inheritdoc />
+        public async Awaitable<VersionDTO> GetVersionInPreparationAsync()
+        {
+            var response = await GameDevelopmentRequest.GetVersionInPreparation();
+            return GameDevelopmentTransportMapper.ToDomain(response);
+        }
+
+        /// <inheritdoc />
         public async Awaitable<VersionDTO> GetCurrentVersionAsync()
         {
             var response = await GameDevelopmentRequest.GetCurrentVersion();

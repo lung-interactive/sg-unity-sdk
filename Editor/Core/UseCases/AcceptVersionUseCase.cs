@@ -49,5 +49,53 @@ namespace SGUnitySDK.Editor.Core.UseCases
             _versionRepository.SaveVersion(version);
             return true;
         }
+
+        /// <summary>
+        /// Resolves the version currently in preparation, acknowledges it,
+        /// and persists the result locally.
+        /// </summary>
+        /// <param name="notes">Optional acknowledgment notes.</param>
+        /// <returns>The acknowledged version when successful; otherwise null.</returns>
+        public async Awaitable<VersionDTO> ExecuteResolveAndAcknowledgeAsync(
+            string notes = null)
+        {
+            var version = await _remoteVersionService.GetVersionInPreparationAsync();
+            if (version == null)
+            {
+                version = await _remoteVersionService.GetVersionUnderDevelopmentAsync();
+            }
+
+            if (version == null || string.IsNullOrEmpty(version.Id))
+            {
+                return null;
+            }
+
+            if (version.State == (int)GameVersionState.UnderDevelopment)
+            {
+                try
+                {
+                    var metadata = await _remoteVersionService
+                        .GetVersionMetadataAsync(version.Id);
+                    if (metadata?.Acknowledgment?.Acknowledged == true)
+                    {
+                        _versionRepository.SaveVersion(version);
+                        return version;
+                    }
+                }
+                catch (Exception)
+                {
+                    // Continue with explicit acknowledge attempt.
+                }
+            }
+
+            var acknowledged = await _remoteVersionService.AcknowledgeVersionAsync(version.Id, notes);
+            if (!acknowledged)
+            {
+                return null;
+            }
+
+            _versionRepository.SaveVersion(version);
+            return version;
+        }
     }
 }

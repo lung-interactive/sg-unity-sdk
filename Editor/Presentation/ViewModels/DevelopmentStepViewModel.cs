@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using SGUnitySDK.Editor.Core.Entities;
+using SGUnitySDK.Editor.Core.Singletons;
 using SGUnitySDK.Editor.Core.UseCases;
 
 namespace SGUnitySDK.Editor.Presentation.ViewModels
@@ -19,6 +20,7 @@ namespace SGUnitySDK.Editor.Presentation.ViewModels
         private readonly UploadBuildUseCase _uploadBuildUseCase;
         private readonly UploadMultipleBuildsUseCase _uploadMultipleBuildsUseCase;
         private readonly SendToHomologationUseCase _sendToHomologationUseCase;
+        private readonly SyncDevelopmentProcessWithServerUseCase _syncUseCase;
         private readonly DevelopmentProcessStateViewModel _processState;
 
         /// <summary>
@@ -30,6 +32,7 @@ namespace SGUnitySDK.Editor.Presentation.ViewModels
         /// <param name="uploadBuildUseCase">Use case for single build upload.</param>
         /// <param name="uploadMultipleBuildsUseCase">Use case for batch build upload.</param>
         /// <param name="sendToHomologationUseCase">Use case for send-to-homologation flow.</param>
+        /// <param name="syncUseCase">Use case for local/remote state synchronization.</param>
         /// <param name="processState">Process state view model abstraction.</param>
         public DevelopmentStepViewModel(
             FetchUnderDevelopmentVersionUseCase fetchUnderDevelopmentVersionUseCase,
@@ -38,6 +41,7 @@ namespace SGUnitySDK.Editor.Presentation.ViewModels
             UploadBuildUseCase uploadBuildUseCase,
             UploadMultipleBuildsUseCase uploadMultipleBuildsUseCase,
             SendToHomologationUseCase sendToHomologationUseCase,
+            SyncDevelopmentProcessWithServerUseCase syncUseCase,
             DevelopmentProcessStateViewModel processState)
         {
             _fetchUnderDevelopmentVersionUseCase = fetchUnderDevelopmentVersionUseCase ??
@@ -52,6 +56,8 @@ namespace SGUnitySDK.Editor.Presentation.ViewModels
                 throw new ArgumentNullException(nameof(uploadMultipleBuildsUseCase));
             _sendToHomologationUseCase = sendToHomologationUseCase ??
                 throw new ArgumentNullException(nameof(sendToHomologationUseCase));
+            _syncUseCase = syncUseCase ??
+                throw new ArgumentNullException(nameof(syncUseCase));
             _processState = processState ??
                 throw new ArgumentNullException(nameof(processState));
         }
@@ -81,13 +87,17 @@ namespace SGUnitySDK.Editor.Presentation.ViewModels
         /// <returns>True when acceptance succeeds; otherwise false.</returns>
         public async Task<bool> AcceptDevelopmentVersionAsync(string notes)
         {
-            var version = await _fetchUnderDevelopmentVersionUseCase.ExecuteAsync();
-            if (version == null)
+            var acceptedVersion = await _acceptVersionUseCase
+                .ExecuteResolveAndAcknowledgeAsync(notes);
+
+            if (acceptedVersion == null)
             {
                 return false;
             }
 
-            return await _acceptVersionUseCase.ExecuteAsync(version, notes);
+            _processState.SetCurrentVersion(acceptedVersion);
+            _processState.SetStep(DevelopmentStep.Development);
+            return true;
         }
 
         /// <summary>
@@ -159,12 +169,43 @@ namespace SGUnitySDK.Editor.Presentation.ViewModels
         public async Task<bool> SendCurrentVersionToHomologationAsync()
         {
             var version = _processState.CurrentVersion;
-            if (version == null)
+            if (version == null || !_processState.AreAllBuildsUploaded())
             {
                 return false;
             }
 
             return await _sendToHomologationUseCase.ExecuteAsync(version);
+        }
+
+        /// <summary>
+        /// Polls backend synchronization until the current version transitions
+        /// to Homologation or timeout is reached.
+        /// </summary>
+        /// <param name="pollInterval">Delay between sync attempts.</param>
+        /// <param name="timeout">Maximum waiting time for transition.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>True when Homologation step is observed; otherwise false.</returns>
+        public async Task<bool> WaitForHomologationTransitionAsync(
+            TimeSpan pollInterval,
+            TimeSpan timeout,
+            CancellationToken ct = default)
+        {
+            var startedAt = DateTimeOffset.UtcNow;
+            while (DateTimeOffset.UtcNow - startedAt < timeout)
+            {
+                ct.ThrowIfCancellationRequested();
+
+                await _syncUseCase.ExecuteAsync();
+                if (_processState.CurrentStep == DevelopmentStep.Homologation)
+                {
+                    return true;
+                }
+
+                await Task.Delay(pollInterval, ct);
+            }
+
+            await _syncUseCase.ExecuteAsync();
+            return _processState.CurrentStep == DevelopmentStep.Homologation;
         }
     }
 }

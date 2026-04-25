@@ -26,6 +26,13 @@ Core runtime entry points:
 - `EventBus<T>` and `EventBinding<T>` (in-game event wiring)
 - `SGHttpRequest` and `SGHttpResponse` (HTTP utility layer)
 
+## Init Settings
+
+For launcher configuration (`launcher.config`) loading and typed value
+consumption, see:
+
+- [Init Settings Service Guide](./Docs/init-settings-service.md)
+
 ## Quick Start
 
 ### 1. Ensure launcher initialization runs

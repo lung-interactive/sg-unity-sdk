@@ -26,9 +26,13 @@ namespace SGUnitySDK.Editor.Infrastructure
         /// <inheritdoc />
         public async Task<bool> UploadFileToPresignedUrlAsync(
             string filePath,
-            string presignedUrl)
+            string presignedUrl,
+            string contentType = null)
         {
-            return await S3Uploader.UploadFileToPresignedUrl(filePath, presignedUrl);
+            return await S3Uploader.UploadFileToPresignedUrl(
+                filePath,
+                presignedUrl,
+                contentType);
         }
 
         /// <inheritdoc />

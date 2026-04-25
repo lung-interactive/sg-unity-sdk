@@ -157,6 +157,23 @@ namespace SGUnitySDK.Editor.Presentation.ViewModels
             return true;
         }
 
+        /// <summary>
+        /// Checks whether homologation was requested and the backend has not
+        /// yet transitioned to a homologation/terminal step.
+        /// </summary>
+        /// <returns>True when homologation request is pending.</returns>
+        public bool HasPendingHomologationRequest()
+        {
+            if (!_process.HomologationRequestedAt.HasValue)
+            {
+                return false;
+            }
+
+            return _process.CurrentStep != DevelopmentStep.Homologation &&
+                   _process.CurrentStep != DevelopmentStep.Approved &&
+                   _process.CurrentStep != DevelopmentStep.Canceled;
+        }
+
         private void OnStepChanged(DevelopmentStep step)
         {
             StepChanged?.Invoke(step);

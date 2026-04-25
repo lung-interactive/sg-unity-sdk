@@ -154,6 +154,15 @@ namespace SGUnitySDK.Editor.Core.UseCases
                     }
 
                     // Handle terminal server states explicitly: Ready -> Approved, Canceled -> Canceled
+                    if (serverState == GameVersionState.AwaitingDevelopmentApproval)
+                    {
+                        dev.CurrentVersion = serverVersion;
+                        dev.CurrentVersionMetadata = await SafeGetMetadata(serverVersion.Id);
+                        dev.SetStep(DevelopmentStep.AcceptVersion);
+                        dev.Persist();
+                        return true;
+                    }
+
                     if (serverState == GameVersionState.Ready)
                     {
                         // Mark local process as approved (development ended)
@@ -182,8 +191,7 @@ namespace SGUnitySDK.Editor.Core.UseCases
                     // Fallback: for other terminal states run discovery
                     if (serverState == GameVersionState.Released ||
                         serverState == GameVersionState.Rejected ||
-                        serverState == GameVersionState.Deprecated ||
-                        serverState == GameVersionState.AwaitingDevelopmentApproval)
+                        serverState == GameVersionState.Deprecated)
                     {
                         return await DiscoverAndAdoptVersion(dev);
                     }
@@ -211,6 +219,18 @@ namespace SGUnitySDK.Editor.Core.UseCases
         {
             try
             {
+                // Prefer versions waiting for development acknowledgment.
+                var inPreparation = await _remoteVersionService.GetVersionInPreparationAsync();
+                if (inPreparation != null)
+                {
+                    var metadata = await SafeGetMetadata(inPreparation.Id);
+                    dev.CurrentVersion = inPreparation;
+                    dev.CurrentVersionMetadata = metadata;
+                    dev.SetStep(DevelopmentStep.AcceptVersion);
+                    dev.Persist();
+                    return true;
+                }
+
                 // Prefer an explicit UnderDevelopment version
                 var underDev = await _remoteVersionService.GetVersionUnderDevelopmentAsync();
                 if (underDev != null)

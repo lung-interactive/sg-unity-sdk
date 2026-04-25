@@ -3,6 +3,7 @@ using UnityEditor;
 using System;
 using SGUnitySDK.Http;
 using SGUnitySDK.Editor.Infrastructure.Http;
+using SGUnitySDK.Editor.Infrastructure.Http.Transport;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,7 +23,6 @@ namespace SGUnitySDK.Editor.Versioning
         {
             public string originalVersion;
             public bool versionUpdatedLocally;
-            public bool versionStartedRemotely;
             public string remoteSemver;
             public List<SGLocalBuildResult> buildResults;
             public SemanticVersionUpdater.VersionIncrementReport versionReport;
@@ -83,7 +83,6 @@ namespace SGUnitySDK.Editor.Versioning
 
                 // Step 4: Prepare remote version
                 var remoteVersion = await ExecuteStep("Preparing remote version", () => PrepareRemoteVersion(state.versionReport.newVersion)) ?? throw new Exception("Failed to prepare remote version");
-                state.versionStartedRemotely = true;
                 state.remoteSemver = remoteVersion.Semver.Raw;
                 SGVersionLogger.Log($"Remote version prepared: {remoteVersion.Semver.Raw}");
 
@@ -256,7 +255,6 @@ namespace SGUnitySDK.Editor.Versioning
         private static async Awaitable<VersionDTO> PrepareRemoteVersion(string version)
         {
             SGVersionLogger.Log("Preparing remote version...");
-            await CancelVersionInPreparation();
             return await StartVersionWithRemote(version);
         }
 
@@ -333,8 +331,8 @@ namespace SGUnitySDK.Editor.Versioning
             SGVersionLogger.Log($"Ending remote version {version}...");
             try
             {
-                var request = GameDevelopmentRequest.To("versions/end-preparation", HttpMethod.Post);
-                request.SetBody(new EndVersionDTO()
+                var request = GameDevelopmentRequest.To("versions/send-to-homologation", HttpMethod.Post);
+                request.SetBody(new SendToHomologationDTO()
                 {
                     Semver = version,
                 });
@@ -463,37 +461,38 @@ namespace SGUnitySDK.Editor.Versioning
 
         private static async Awaitable<VersionDTO> StartVersionWithRemote(string targetVersion)
         {
-            SGVersionLogger.Log($"Starting remote version for {targetVersion}...");
+            SGVersionLogger.Log(
+                $"Resolving remote version in preparation for {targetVersion}...");
             try
             {
-                var request = GameDevelopmentRequest
-                    .To("versions/start-new", HttpMethod.Post)
-                    .SetBody(new StartGameVersionUpdateDTO()
-                    {
-                        VersionUpdateType = VersionUpdateType.Specific,
-                        SpecificVersion = targetVersion,
-                        IsPrerelease = false
-                    });
+                var inPreparation = await GameDevelopmentRequest.GetVersionInPreparation();
+                if (inPreparation == null)
+                {
+                    throw new InvalidOperationException(
+                        "No version in preparation is available for acceptance.");
+                }
 
-                var response = await request.SendAsync();
-                var version = response.ReadBodyData<VersionDTO>();
+                var version = GameDevelopmentTransportMapper.ToDomain(inPreparation);
+                if (version == null || version.Semver == null)
+                {
+                    throw new InvalidOperationException(
+                        "Version in preparation payload is invalid.");
+                }
+
+                if (version.Semver.Raw != targetVersion)
+                {
+                    throw new InvalidOperationException(
+                        $"Version in preparation ({version.Semver.Raw}) does not match target version ({targetVersion}).");
+                }
 
                 return version;
             }
             catch (Exception ex)
             {
-                SGVersionLogger.LogError($"Failed to start version: {ex.Message}");
+                SGVersionLogger.LogError(
+                    $"Failed to resolve version in preparation: {ex.Message}");
                 throw;
             }
-        }
-
-        private static async Awaitable CancelVersionInPreparation()
-        {
-            SGVersionLogger.Log("Cancelling any version in preparation...");
-            var request = GameDevelopmentRequest
-                .To("versions/cancel-in-preparation", HttpMethod.Delete);
-
-            await request.SendAsync();
         }
 
         private static async Awaitable PerformRollback(ReleaseState state)
@@ -508,12 +507,6 @@ namespace SGUnitySDK.Editor.Versioning
                 {
                     SGVersionLogger.Log($"Reverting to original version: {state.originalVersion}");
                     SemanticVersionUpdater.UpdateVersionEverywhere(state.originalVersion);
-                }
-
-                if (state.versionStartedRemotely && !string.IsNullOrEmpty(state.remoteSemver))
-                {
-                    SGVersionLogger.Log($"Cancelling remote version: {state.remoteSemver}");
-                    await CancelVersionInPreparation();
                 }
 
                 string currentBranch = GitExecutor.GetCurrentBranch();

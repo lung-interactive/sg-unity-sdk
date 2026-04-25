@@ -223,8 +223,16 @@ namespace SGUnitySDK.Editor.Infrastructure.Http
                 if (!response.Success)
                 {
                     var errorBody = response.ReadErrorBody();
+                    string message =
+                        errorBody.Messages != null && errorBody.Messages.Length > 0
+                            ? string.Join(", ", errorBody.Messages)
+                            : response.HttpErrorMessage;
+                    if (string.IsNullOrWhiteSpace(message))
+                    {
+                        message = $"HTTP {response.ResponseCode}";
+                    }
                     SGLogger.LogError(
-                        $"Failed to filter versions: {string.Join(", ", errorBody.Messages)}"
+                        $"Failed to filter versions: {message}"
                     );
                     throw new RequestFailedException(errorBody, response.ResponseCode);
                 }

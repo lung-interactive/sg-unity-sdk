@@ -1,6 +1,8 @@
+using System;
 using System.IO;
 using System.Text.RegularExpressions;
 using SGUnitySDK.Editor.Infrastructure.Http;
+using SGUnitySDK.Editor.Infrastructure.Http.Transport;
 using SGUnitySDK.Http;
 using UnityEditor;
 using UnityEngine;
@@ -18,26 +20,30 @@ namespace SGUnitySDK.Editor.Versioning
             SemVerType targetVersion
         )
         {
-            var request = GameDevelopmentRequest
-                .To("versions/start-new", SGUnitySDK.Http.HttpMethod.Post)
-                .SetBody(new StartGameVersionUpdateDTO()
-                {
-                    VersionUpdateType = VersionUpdateType.Specific,
-                    SpecificVersion = targetVersion.Raw,
-                    IsPrerelease = false
-                });
-
-            var response = await request.SendAsync();
-            if (!response.Success)
+            var inPreparation = await GameDevelopmentRequest.GetVersionInPreparation();
+            if (inPreparation == null)
             {
-                var errorBody = response.ReadErrorBody();
-                LogErrors(errorBody);
-                throw new RequestFailedException(errorBody, response.ResponseCode);
+                throw new InvalidOperationException(
+                    "No version in preparation is available for acceptance.");
+            }
+
+            var version = GameDevelopmentTransportMapper.ToDomain(inPreparation);
+            if (version == null || version.Semver == null)
+            {
+                throw new InvalidOperationException(
+                    "Version in preparation payload is invalid.");
+            }
+
+            if (targetVersion != null && version.Semver.Raw != targetVersion.Raw)
+            {
+                throw new InvalidOperationException(
+                    $"Version in preparation ({version.Semver.Raw}) does not match target version ({targetVersion.Raw}).");
             }
 
             process.StartedInRemote = true;
+            process.RemoteSemver = version.Semver.Raw;
 
-            return response.ReadBodyData<VersionDTO>();
+            return version;
         }
 
         public static async Awaitable CancelVersionPreparation(
@@ -69,8 +75,8 @@ namespace SGUnitySDK.Editor.Versioning
             SGVersionLogger.Log($"Closing remote version {version}...");
             try
             {
-                var request = GameDevelopmentRequest.To("versions/end-preparation", HttpMethod.Post);
-                request.SetBody(new EndVersionDTO()
+                var request = GameDevelopmentRequest.To("versions/send-to-homologation", HttpMethod.Post);
+                request.SetBody(new SendToHomologationDTO()
                 {
                     Semver = version,
                 });

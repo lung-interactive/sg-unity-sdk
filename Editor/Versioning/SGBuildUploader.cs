@@ -29,7 +29,8 @@ namespace SGUnitySDK.Editor
         )
         {
             if (string.IsNullOrEmpty(remoteSemver))
-                throw new InvalidOperationException("RemoteSemver is not set. Start version in remote before uploading.");
+                throw new InvalidOperationException(
+                    "RemoteSemver is not set. Accept a version in preparation before uploading.");
 
             var build = entry.build;
             if (string.IsNullOrEmpty(build.path) || !File.Exists(build.path))
