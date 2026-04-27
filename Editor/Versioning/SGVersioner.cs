@@ -526,6 +526,8 @@ namespace SGUnitySDK.Editor.Versioning
             {
                 SGVersionLogger.LogError($"Error during rollback: {ex.Message}");
             }
+
+            await Task.CompletedTask;
         }
 
         private static async Awaitable<T> ExecuteStep<T>(string stepName, Func<Awaitable<T>> stepAction)

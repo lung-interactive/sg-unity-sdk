@@ -109,9 +109,9 @@ namespace SGUnitySDK.Editor.Versioning
                 Debug.LogError($"[SG Build] {errorMessage}");
                 return false;
             }
-#endif
-
+#else
             return true;
+#endif
         }
 
         /// <summary>
