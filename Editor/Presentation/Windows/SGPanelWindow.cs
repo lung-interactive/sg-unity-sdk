@@ -10,6 +10,7 @@ using SGUnitySDK.Editor.Infrastructure;
 using SGUnitySDK.Editor.Presentation.Elements;
 using System.Threading.Tasks;
 using SGUnitySDK.Editor.Presentation.ViewModels;
+using HMSUnitySDK;
 
 namespace SGUnitySDK.Editor.Presentation.Windows
 {
@@ -150,6 +151,7 @@ namespace SGUnitySDK.Editor.Presentation.Windows
         private TextField _fieldGameDevelopmentToken;
         private Toggle _fieldShouldOverrideBaseURL;
         private TextField _fieldBaseURlOverride;
+        private ObjectField _fieldRuntimeProfile;
         private TextField _fieldBuildsDirectory;
         private Button _buttonDefineBuildsDirectory;
         private ListView _listBuildProfiles;
@@ -317,6 +319,14 @@ namespace SGUnitySDK.Editor.Presentation.Windows
                 _fieldBaseURlOverride.RegisterValueChangedCallback(OnOverrideBaseURLValueChanged);
             }
 
+            _fieldRuntimeProfile = _containerMain.Q<ObjectField>("field-runtime-profile");
+            if (_fieldRuntimeProfile != null)
+            {
+                _fieldRuntimeProfile.objectType = typeof(HMSRuntimeProfile);
+                _fieldRuntimeProfile.SetValueWithoutNotify(_configViewModel.RuntimeProfile);
+                _fieldRuntimeProfile.RegisterValueChangedCallback(OnRuntimeProfileValueChanged);
+            }
+
             _fieldBuildsDirectory = _containerMain.Q<TextField>("field-builds-directory");
             if (_fieldBuildsDirectory != null)
             {
@@ -447,6 +457,16 @@ namespace SGUnitySDK.Editor.Presentation.Windows
             ChangeEvent<string> evt)
         {
             _configViewModel.SetBaseURLOverride(evt.newValue);
+        }
+
+        /// <summary>
+        /// Handles changes to the production runtime profile field.
+        /// </summary>
+        /// <param name="evt">Change event.</param>
+        private void OnRuntimeProfileValueChanged(
+            ChangeEvent<UnityEngine.Object> evt)
+        {
+            _configViewModel.SetRuntimeProfile(evt.newValue as HMSRuntimeProfile);
         }
 
         /// <summary>

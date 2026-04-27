@@ -11,17 +11,55 @@ namespace SGUnitySDK
     {
         private HMSLauncherInteropsService _launcherInterops;
         private HMSAuth _hmsAuth;
+        private bool _hasRequiredServices;
+        private string _requiredServicesReason;
 
         // Start is called once before the first execution of Update after the MonoBehaviour is created
         void Awake()
         {
-            _launcherInterops = HMSLocator.Get<HMSLauncherInteropsService>();
-            _hmsAuth = HMSLocator.Get<HMSAuth>();
+            _hasRequiredServices = TryResolveRequiredServices(out _requiredServicesReason);
         }
 
         void Start()
         {
+            if (!_hasRequiredServices)
+            {
+                var reason = string.IsNullOrWhiteSpace(_requiredServicesReason)
+                    ? "Required HMS services are unavailable."
+                    : _requiredServicesReason;
+                Debug.LogError(reason);
+                Failed(reason);
+                return;
+            }
+
             _ = InitializationRoutine();
+        }
+
+        /// <summary>
+        /// Tries to resolve required HMS services without throwing exceptions.
+        /// </summary>
+        /// <param name="reason">Diagnostic reason when resolution fails.</param>
+        /// <returns>True when all required services are available.</returns>
+        private bool TryResolveRequiredServices(out string reason)
+        {
+            if (!HMSLocator.TryGet(out _launcherInterops, out var interopsReason))
+            {
+                reason =
+                    $"Required HMS service {nameof(HMSLauncherInteropsService)} " +
+                    $"is unavailable: {interopsReason}";
+                return false;
+            }
+
+            if (!HMSLocator.TryGet(out _hmsAuth, out var authReason))
+            {
+                reason =
+                    $"Required HMS service {nameof(HMSAuth)} is unavailable: " +
+                    authReason;
+                return false;
+            }
+
+            reason = string.Empty;
+            return true;
         }
 
         private async Awaitable InitializationRoutine()
@@ -96,7 +134,13 @@ namespace SGUnitySDK
         private void HandleEditorRuntime()
         {
             var runtimeInfo = HMSRuntimeInfo.Get();
-            if (runtimeInfo.Profile.RuntimeMode != HMSRuntimeMode.Editor) return;
+            if (runtimeInfo == null ||
+                runtimeInfo.Profile == null ||
+                runtimeInfo.Profile.RuntimeMode != HMSRuntimeMode.Editor)
+            {
+                return;
+            }
+
             var dummySocket = _launcherInterops.Interops.Socket as HMSDummyLauncherInteropsSocket;
 
             dummySocket.Init();

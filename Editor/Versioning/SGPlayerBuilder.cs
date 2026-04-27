@@ -59,22 +59,32 @@ namespace SGUnitySDK.Editor.Versioning
         /// HMSRuntimeInfo asset in Resources, caching the original profile
         /// so it can be restored later.
         /// </summary>
-        private static void ApplyRuntimeProfilePatch()
+        private static bool ApplyRuntimeProfilePatch(out string errorMessage)
         {
+            errorMessage = string.Empty;
 #if UNITY_EDITOR
             try
             {
                 var cfg = SGEditorConfig.instance;
                 var selectedProfile = cfg != null ? cfg.RuntimeProfile : null;
 
+                if (selectedProfile == null)
+                {
+                    errorMessage =
+                        "Build generation aborted: Production Runtime Profile " +
+                        "is not configured in SGUnitySDK Config.";
+                    Debug.LogError($"[SG Build] {errorMessage}");
+                    return false;
+                }
+
                 var runtimeInfo = HMSRuntimeInfo.GetFromResources();
                 if (runtimeInfo == null)
                 {
-                    Debug.LogWarning(
-                        "[SG Build] HMSRuntimeInfo asset not found in " +
-                        "Resources. Profile patch will be skipped."
-                    );
-                    return;
+                    errorMessage =
+                        "Build generation aborted: HMSRuntimeInfo asset " +
+                        "not found in Resources.";
+                    Debug.LogError($"[SG Build] {errorMessage}");
+                    return false;
                 }
 
                 _cachedProfile = runtimeInfo.Profile;
@@ -89,15 +99,19 @@ namespace SGUnitySDK.Editor.Versioning
                     "[SG Build] HMSRuntimeProfile applied to Resources: " +
                     (selectedProfile != null ? selectedProfile.name : "NULL")
                 );
+                return true;
             }
             catch (Exception ex)
             {
-                Debug.LogError(
-                    "[SG Build] Failed to apply HMSRuntimeProfile patch. " +
-                    $"Reason: {ex.Message}"
-                );
+                errorMessage =
+                    "Build generation aborted: failed to apply " +
+                    $"HMSRuntimeProfile patch. Reason: {ex.Message}";
+                Debug.LogError($"[SG Build] {errorMessage}");
+                return false;
             }
 #endif
+
+            return true;
         }
 
         /// <summary>
@@ -195,7 +209,24 @@ namespace SGUnitySDK.Editor.Versioning
             }
 
             // Apply HMS profile patch once for the full batch.
-            ApplyRuntimeProfilePatch();
+            if (!ApplyRuntimeProfilePatch(out var runtimeProfilePatchError))
+            {
+                RestoreRuntimeProfilePatch();
+
+                foreach (var setup in setups)
+                {
+                    buildResults.Add(new SGLocalBuildResult
+                    {
+                        success = false,
+                        productName = setup?.profile != null
+                            ? setup.profile.name
+                            : "Unknown Profile",
+                        errorMessage = runtimeProfilePatchError
+                    });
+                }
+
+                return buildResults;
+            }
 
             try
             {

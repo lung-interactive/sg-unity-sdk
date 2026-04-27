@@ -15,7 +15,7 @@ Main points:
 - Service type: `SGUnitySDK.Initialization.InitSettingsService`
 - Contract: `IHMSService`
 - Build roles: `Client` and `LaunchedClient`
-- Locator access: `HMSLocator.Get<InitSettingsService>()`
+- Locator access: `HMSLocator.TryGet(out InitSettingsService, out string reason)`
 - Page and field lookup: case-insensitive
 
 ## Where `launcher.config` Is Read
@@ -121,14 +121,10 @@ public sealed class LauncherConfigConsumer : MonoBehaviour
 
     private void Awake()
     {
-        try
-        {
-            _initSettings = HMSLocator.Get<InitSettingsService>();
-        }
-        catch (Exception ex)
+    if (!HMSLocator.TryGet(out _initSettings, out var reason))
         {
             Debug.LogWarning(
-                $"InitSettingsService is unavailable: {ex.Message}");
+        $"InitSettingsService is unavailable: {reason}");
         }
     }
 

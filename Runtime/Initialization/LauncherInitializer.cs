@@ -74,6 +74,8 @@ namespace SGUnitySDK.Initialization
         private HMSLauncherInteropsService _launcherInterops;
         private HMSAuth _hmsAuth;
         private InitSettingsService _initSettings;
+        private bool _hasRequiredServices;
+        private string _requiredServicesReason;
 
         #endregion
 
@@ -87,7 +89,7 @@ namespace SGUnitySDK.Initialization
         /// initialization overlay exists and remains across scene loads.
         /// </summary>
         [Preserve]
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        [HMSInit(RuntimeInitializeLoadType.BeforeSceneLoad, order: -50)]
         private static void RuntimeInitialize()
         {
             if (_bootstrapped) return;
@@ -141,9 +143,41 @@ namespace SGUnitySDK.Initialization
         /// </summary>
         private void Awake()
         {
-            _launcherInterops = HMSLocator.Get<HMSLauncherInteropsService>();
-            _hmsAuth = HMSLocator.Get<HMSAuth>();
+            _hasRequiredServices = TryResolveRequiredServices(out _requiredServicesReason);
             _initSettings = TryResolveInitSettingsService();
+        }
+
+        /// <summary>
+        /// Resolves required services from HMSLocator without throwing.
+        /// </summary>
+        /// <param name="reason">
+        /// Diagnostic reason when a required service cannot be resolved.
+        /// </param>
+        /// <returns>
+        /// True when all required services are available; otherwise false.
+        /// </returns>
+        private bool TryResolveRequiredServices(out string reason)
+        {
+            if (!HMSLocator.TryGet(out _launcherInterops, out var interopsReason))
+            {
+                reason = string.Format(
+                    S.Errors.RequiredServiceMissing,
+                    nameof(HMSLauncherInteropsService),
+                    interopsReason);
+                return false;
+            }
+
+            if (!HMSLocator.TryGet(out _hmsAuth, out var authReason))
+            {
+                reason = string.Format(
+                    S.Errors.RequiredServiceMissing,
+                    nameof(HMSAuth),
+                    authReason);
+                return false;
+            }
+
+            reason = string.Empty;
+            return true;
         }
 
         /// <summary>
@@ -154,17 +188,15 @@ namespace SGUnitySDK.Initialization
         /// </returns>
         private static InitSettingsService TryResolveInitSettingsService()
         {
-            try
+            if (HMSLocator.TryGet(out InitSettingsService initSettings, out var reason))
             {
-                return HMSLocator.Get<InitSettingsService>();
+                return initSettings;
             }
-            catch (Exception ex)
-            {
-                SGLogger.LogWarning(string.Format(
-                    S.Errors.InitSettingsServiceMissingWarn,
-                    ex.Message));
-                return null;
-            }
+
+            SGLogger.LogWarning(string.Format(
+                S.Errors.InitSettingsServiceMissingWarn,
+                reason));
+            return null;
         }
 
         /// <summary>
@@ -172,6 +204,18 @@ namespace SGUnitySDK.Initialization
         /// </summary>
         private void Start()
         {
+            if (!_hasRequiredServices)
+            {
+                var reason = string.IsNullOrWhiteSpace(_requiredServicesReason)
+                    ? S.Errors.RequiredServicesUnavailable
+                    : _requiredServicesReason;
+
+                SGLogger.LogError(reason);
+                Failed(reason);
+                _initUts?.TrySetException(new InvalidOperationException(reason));
+                return;
+            }
+
             InitializationRoutine().Forget();
         }
 
@@ -331,7 +375,12 @@ namespace SGUnitySDK.Initialization
         private void HandleEditorRuntime()
         {
             var runtimeInfo = HMSRuntimeInfo.Get();
-            if (runtimeInfo.Profile.RuntimeMode != HMSRuntimeMode.Editor) return;
+            if (runtimeInfo == null ||
+                runtimeInfo.Profile == null ||
+                runtimeInfo.Profile.RuntimeMode != HMSRuntimeMode.Editor)
+            {
+                return;
+            }
 
 
             if (_launcherInterops.Interops.Socket
@@ -480,6 +529,11 @@ namespace SGUnitySDK.Initialization
                     "Failed connecting to launcher";
                 internal const string AuthFetchFailed =
                     "Failed to retrieve authentication data";
+                internal const string RequiredServicesUnavailable =
+                    "Required HMS services are unavailable. Initialization " +
+                    "cannot continue.";
+                internal const string RequiredServiceMissing =
+                    "Required HMS service {0} could not be resolved: {1}";
                 internal const string InitSettingsServiceMissingWarn =
                     "InitSettingsService could not be resolved from HMSLocator: " +
                     "{0}. Continuing without launcher config settings.";

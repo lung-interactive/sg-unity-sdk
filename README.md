@@ -37,13 +37,17 @@ consumption, see:
 
 ### 1. Ensure launcher initialization runs
 
-`LauncherInitializer` runs before first scene load through
-`RuntimeInitializeOnLoadMethod` and sets up launcher interop and auth.
+`LauncherInitializer` runs in the HMS init pipeline through
+`[HMSInit(RuntimeInitializeLoadType.BeforeSceneLoad)]`, which executes only
+after HMS bootstrap completes successfully.
 
 If initialization succeeds:
 
 - auth data is fetched and registered
 - `sg-client.ready` is emitted
+
+Service resolution uses `HMSLocator.TryGet(...)` to provide explicit
+diagnostics and fail-safe fallback paths.
 
 If it fails:
 
