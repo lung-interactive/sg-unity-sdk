@@ -5,6 +5,7 @@ using System.Linq;
 using System.IO;
 using HMSUnitySDK;
 using SGUnitySDK.Editor.Core.Entities;
+using UnityEngine.Serialization;
 
 namespace SGUnitySDK.Editor.Core.Singletons
 {
@@ -18,7 +19,9 @@ namespace SGUnitySDK.Editor.Core.Singletons
         [SerializeField] private string _baseUrlOverride;
         [SerializeField] private HMSRuntimeProfile _runtimeProfile;
         [SerializeField] private string _buildsDirectory = DefaultBuildsDirectory();
-        [SerializeField] private List<SGBuildSetup> _buildSetups;
+        [SerializeField, FormerlySerializedAs("_buildSetups")]
+        private List<SGBuildSetup> _clientBuildSetups = new();
+        [SerializeField] private List<SGBuildSetup> _serverBuildSetups = new();
 
         public string ApiBaseURL => !_shouldOverrideBaseUrl ? API_BASE_URL : _baseUrlOverride;
         public bool ShouldOverrideBaseURL => _shouldOverrideBaseUrl;
@@ -26,7 +29,12 @@ namespace SGUnitySDK.Editor.Core.Singletons
         public HMSRuntimeProfile RuntimeProfile => _runtimeProfile;
         public string GameDevelopmentToken => _gameDevelopmentToken;
         public string BuildsDirectory => _buildsDirectory;
-        public List<SGBuildSetup> BuildSetups => _buildSetups;
+        public List<SGBuildSetup> ClientBuildSetups =>
+            _clientBuildSetups ??= new List<SGBuildSetup>();
+        public List<SGBuildSetup> ServerBuildSetups =>
+            _serverBuildSetups ??= new List<SGBuildSetup>();
+        public List<SGBuildSetup> BuildSetups =>
+            ServerBuildSetups.Concat(ClientBuildSetups).ToList();
 
         public bool IsGMTValid => !string.IsNullOrEmpty(_gameDevelopmentToken);
 
@@ -94,7 +102,8 @@ namespace SGUnitySDK.Editor.Core.Singletons
             _baseUrlOverride = string.Empty;
             _gameDevelopmentToken = string.Empty;
             _buildsDirectory = DefaultBuildsDirectory();
-            _buildSetups = new List<SGBuildSetup>();
+            _clientBuildSetups = new List<SGBuildSetup>();
+            _serverBuildSetups = new List<SGBuildSetup>();
             Persist();
         }
 

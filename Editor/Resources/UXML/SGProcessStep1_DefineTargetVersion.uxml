@@ -2,7 +2,7 @@
     <Style src="project://database/Assets/SGUnitySDK/Editor/Resources/Styles/Common_style.uss?fileID=7433441132597879392&amp;guid=6f1cf7892ff31374fbc43ebe464e850e&amp;type=3#Common_style" />
     <ui:Label text="Step 1 - Defining Target Version" class="label-header" />
     <ui:VisualElement name="container-state-defining" style="flex-grow: 0;">
-        <ui:EnumField label="Increment Type" value="Center" type="SGUnitySDK.Editor.VersionUpdateType, SGUnitySDK.Editor" name="field-increment-version-type" />
+        <ui:EnumField label="Increment Type" value="Patch" type="SGUnitySDK.Editor.Core.Entities.VersionUpdateType, SGUnitySDK.Editor" name="field-increment-version-type" />
         <ui:TextField label="Custom Version" name="field-custom-version" />
         <ui:Button text="Define" name="button-define" enable-rich-text="true" />
     </ui:VisualElement>

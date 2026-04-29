@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using SGUnitySDK.Editor.Core.Entities;
 using SGUnitySDK.Editor.Core.Repositories;
@@ -32,6 +33,7 @@ namespace SGUnitySDK.Editor.Core.UseCases
         /// <summary>
         /// Generates builds using the project's configured build setups and
         /// returns a list of `SGVersionBuildEntry` ready for upload.
+        /// Server builds are generated before client builds.
         /// This method validates that the DevelopmentProcess is in the
         /// Development step and will throw if no current development version
         /// is available.
@@ -46,20 +48,21 @@ namespace SGUnitySDK.Editor.Core.UseCases
                 throw new InvalidOperationException("No current development version available in DevelopmentProcess.");
 
             var target = current.Semver.Raw;
-
-            var setups = SGEditorConfig.instance.BuildSetups;
             var commonBuildPath = SGEditorConfig.instance.BuildsDirectory;
 
-            var results = _buildGenerationService.GenerateBuilds(
-                setups,
-                commonBuildPath,
-                target);
-
             var entries = new List<SGVersionBuildEntry>();
-            foreach (var r in results)
-            {
-                entries.Add(new SGVersionBuildEntry { build = r });
-            }
+
+            entries.AddRange(GenerateEntriesForType(
+                BuildType.Server,
+                SGEditorConfig.instance.ServerBuildSetups,
+                commonBuildPath,
+                target));
+
+            entries.AddRange(GenerateEntriesForType(
+                BuildType.Client,
+                SGEditorConfig.instance.ClientBuildSetups,
+                commonBuildPath,
+                target));
 
             return entries;
         }
@@ -76,6 +79,42 @@ namespace SGUnitySDK.Editor.Core.UseCases
         public Task<List<SGVersionBuildEntry>> ExecuteAsync()
         {
             return Task.FromResult(Execute());
+        }
+
+        private List<SGVersionBuildEntry> GenerateEntriesForType(
+            BuildType buildType,
+            List<SGBuildSetup> setups,
+            string commonBuildPath,
+            string targetVersion)
+        {
+            var entries = new List<SGVersionBuildEntry>();
+            if (setups == null || setups.Count == 0)
+            {
+                return entries;
+            }
+
+            string typedBuildPath = Path.Combine(
+                commonBuildPath,
+                buildType.ToString());
+
+            var results = _buildGenerationService.GenerateBuilds(
+                setups,
+                typedBuildPath,
+                targetVersion);
+
+            if (results == null)
+            {
+                return entries;
+            }
+
+            for (int i = 0; i < results.Count; i++)
+            {
+                var result = results[i];
+                result.buildType = buildType;
+                entries.Add(new SGVersionBuildEntry { build = result });
+            }
+
+            return entries;
         }
     }
 }

@@ -49,7 +49,8 @@ namespace SGUnitySDK.Editor.Presentation.Windows
         private ObjectField _fieldRuntimeProfile;
         private TextField _fieldBuildsDirectory;
         private Button _buttonDefineBuildsDirectory;
-        private ListView _listBuildProfiles;
+        private ListView _listServerBuildProfiles;
+        private ListView _listClientBuildProfiles;
 
         #endregion
 
@@ -85,8 +86,11 @@ namespace SGUnitySDK.Editor.Presentation.Windows
             _fieldBuildsDirectory.SetValueWithoutNotify(_configViewModel.BuildsDirectory);
             _fieldBuildsDirectory.SetEnabled(false);
 
-            _listBuildProfiles = _containerMain.Q<ListView>("list-build-profiles");
-            SetupBuildProfilesList();
+            _listServerBuildProfiles =
+                _containerMain.Q<ListView>("list-server-build-profiles");
+            _listClientBuildProfiles =
+                _containerMain.Q<ListView>("list-client-build-profiles");
+            SetupBuildProfilesLists();
 
             _buttonDefineBuildsDirectory = _containerMain.Q<Button>("button-define-builds-directory");
             _buttonDefineBuildsDirectory.clicked += OnButtonDefineBuildsDirectoryClicked;
@@ -104,36 +108,54 @@ namespace SGUnitySDK.Editor.Presentation.Windows
 
         private void OnDisable()
         {
-            _listBuildProfiles?.Unbind();
+            _listServerBuildProfiles?.Unbind();
+            _listClientBuildProfiles?.Unbind();
             _configViewModel?.Persist();
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
         }
 
-        private void SetupBuildProfilesList()
+        private void SetupBuildProfilesLists()
         {
-            if (_serializedConfig == null || _listBuildProfiles == null)
+            SetupBuildProfilesList(
+                _listServerBuildProfiles,
+                "_serverBuildSetups",
+                "SGConfigWindow server");
+
+            SetupBuildProfilesList(
+                _listClientBuildProfiles,
+                "_clientBuildSetups",
+                "SGConfigWindow client");
+        }
+
+        private void SetupBuildProfilesList(
+            ListView listView,
+            string propertyName,
+            string contextName)
+        {
+            if (_serializedConfig == null || listView == null)
             {
                 return;
             }
 
             _serializedConfig.UpdateIfRequiredOrScript();
-            var property = _serializedConfig.FindProperty("_buildSetups");
+            var property = _serializedConfig.FindProperty(propertyName);
 
             if (property == null || !property.isArray)
             {
-                Debug.LogWarning("SGConfigWindow could not bind _buildSetups property.");
+                Debug.LogWarning(
+                    $"{contextName} could not bind {propertyName} property.");
                 return;
             }
 
-            _listBuildProfiles.Unbind();
-            _listBuildProfiles.BindProperty(property);
-            _listBuildProfiles.reorderable = true;
-            _listBuildProfiles.reorderMode = ListViewReorderMode.Animated;
-            _listBuildProfiles.selectionType = SelectionType.Single;
-            _listBuildProfiles.showAddRemoveFooter = true;
-            _listBuildProfiles.showBorder = true;
-            _listBuildProfiles.showFoldoutHeader = false;
-            _listBuildProfiles.virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight;
+            listView.Unbind();
+            listView.BindProperty(property);
+            listView.reorderable = true;
+            listView.reorderMode = ListViewReorderMode.Animated;
+            listView.selectionType = SelectionType.Single;
+            listView.showAddRemoveFooter = true;
+            listView.showBorder = true;
+            listView.showFoldoutHeader = false;
+            listView.virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight;
         }
 
         #endregion

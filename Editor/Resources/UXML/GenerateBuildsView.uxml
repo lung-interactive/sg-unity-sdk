@@ -3,9 +3,19 @@
     <ui:Label text="Generate Builds" class="label-header"/>
     <ui:Button text="Generate Builds" name="button-generate-builds"/>
     <ui:VisualElement class="container" style="flex-grow: 1; margin-top: 5px; margin-right: 5px; margin-bottom: 5px; margin-left: 5px;">
-        <ui:VisualElement name="builds-list-group">
-            <ui:ScrollView name="scroll-builds-list"/>
-            <ui:Button text="Upload All" name="button-upload-all"/>
+        <ui:VisualElement name="server-builds-list-group" style="margin-bottom: 10px;">
+            <ui:Label text="Server Builds" class="label-header"/>
+            <ui:VisualElement name="builds-list-group">
+                <ui:ScrollView name="scroll-builds-list"/>
+                <ui:Button text="Upload All Servers" name="button-upload-all"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="client-builds-list-group">
+            <ui:Label text="Client Builds" class="label-header"/>
+            <ui:VisualElement name="builds-list-group">
+                <ui:ScrollView name="scroll-builds-list"/>
+                <ui:Button text="Upload All Clients" name="button-upload-all"/>
+            </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

@@ -18,6 +18,7 @@ namespace SGUnitySDK.Editor.Presentation.Elements
         private readonly ScrollView _scrollView;
         private readonly DevelopmentStepViewModel _viewModel;
         private readonly DevelopmentProcessStateViewModel _processState;
+        private readonly BuildType? _buildTypeFilter;
         private List<SGVersionBuildEntry> _entries = new List<SGVersionBuildEntry>();
         private Button _uploadAllButton;
         private List<BuildItemElement> _items = new List<BuildItemElement>();
@@ -32,12 +33,14 @@ namespace SGUnitySDK.Editor.Presentation.Elements
         public BuildsListElement(
             ScrollView scrollView,
             DevelopmentStepViewModel viewModel,
-            DevelopmentProcessStateViewModel processState = null)
+            DevelopmentProcessStateViewModel processState = null,
+            BuildType? buildTypeFilter = null)
         {
             _scrollView = scrollView ?? throw new System.ArgumentNullException(nameof(scrollView));
             _viewModel = viewModel ?? throw new System.ArgumentNullException(nameof(viewModel));
             _processState = processState ?? EditorServiceProvider.Instance
                 .GetService<DevelopmentProcessStateViewModel>();
+            _buildTypeFilter = buildTypeFilter;
         }
 
         /// <summary>
@@ -53,8 +56,9 @@ namespace SGUnitySDK.Editor.Presentation.Elements
             ScrollView scrollView,
             VisualElement parentContainer,
             DevelopmentStepViewModel viewModel,
-            DevelopmentProcessStateViewModel processState = null)
-            : this(scrollView, viewModel, processState)
+            DevelopmentProcessStateViewModel processState = null,
+            BuildType? buildTypeFilter = null)
+            : this(scrollView, viewModel, processState, buildTypeFilter)
         {
             if (parentContainer == null) return;
 
@@ -93,7 +97,7 @@ namespace SGUnitySDK.Editor.Presentation.Elements
         /// </summary>
         public void SetBuilds(List<SGVersionBuildEntry> entries)
         {
-            _entries = entries ?? new List<SGVersionBuildEntry>();
+            _entries = FilterEntries(entries ?? new List<SGVersionBuildEntry>());
             Refresh();
             // Update UploadAll button enabled state: enable only if some entries are not uploaded
             if (_uploadAllButton != null)
@@ -166,6 +170,17 @@ namespace SGUnitySDK.Editor.Presentation.Elements
             };
 
             return results;
+        }
+
+        private List<SGVersionBuildEntry> FilterEntries(List<SGVersionBuildEntry> entries)
+        {
+            if (!_buildTypeFilter.HasValue)
+            {
+                return entries;
+            }
+
+            return entries.FindAll(
+                entry => entry.build.buildType == _buildTypeFilter.Value);
         }
     }
 }

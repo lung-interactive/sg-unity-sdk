@@ -19,8 +19,8 @@ namespace SGUnitySDK.Editor.Presentation.Elements
     {
         private readonly DevelopmentStepViewModel _viewModel;
         private readonly DevelopmentProcessStateViewModel _processState;
-        private ScrollView _buildsScroll;
-        private BuildsListElement _buildsList;
+        private BuildsListElement _serverBuildsList;
+        private BuildsListElement _clientBuildsList;
         private Button _buttonGenerateBuilds;
 
         /// <summary>
@@ -45,20 +45,40 @@ namespace SGUnitySDK.Editor.Presentation.Elements
 
             visualTree.CloneTree(this);
 
-            _buildsScroll = this.Q<ScrollView>("scroll-builds-list");
-            if (_buildsScroll != null)
+            var serverGroup = this.Q<VisualElement>("server-builds-list-group");
+            if (serverGroup != null)
             {
-                _buildsList = new BuildsListElement(
-                    _buildsScroll,
-                    this,
-                    _viewModel,
-                    _processState);
+                var serverScroll = serverGroup.Q<ScrollView>("scroll-builds-list");
+                if (serverScroll != null)
+                {
+                    _serverBuildsList = new BuildsListElement(
+                        serverScroll,
+                        serverGroup,
+                        _viewModel,
+                        _processState,
+                        BuildType.Server);
+                }
+            }
+
+            var clientGroup = this.Q<VisualElement>("client-builds-list-group");
+            if (clientGroup != null)
+            {
+                var clientScroll = clientGroup.Q<ScrollView>("scroll-builds-list");
+                if (clientScroll != null)
+                {
+                    _clientBuildsList = new BuildsListElement(
+                        clientScroll,
+                        clientGroup,
+                        _viewModel,
+                        _processState,
+                        BuildType.Client);
+                }
             }
 
             this.RegisterCallback<AttachToPanelEvent>(evt =>
             {
                 _processState.StepChanged += OnStepChanged;
-                SetBuilds(_processState.GetVersionBuildsOrEmpty());
+                RefreshBuildSections();
             });
 
             this.RegisterCallback<DetachFromPanelEvent>(evt =>
@@ -82,8 +102,17 @@ namespace SGUnitySDK.Editor.Presentation.Elements
 
         public void SetBuilds(List<SGVersionBuildEntry> entries)
         {
-            if (_buildsList != null)
-                _buildsList.SetBuilds(entries ?? new List<SGVersionBuildEntry>());
+            var source = entries ?? new List<SGVersionBuildEntry>();
+
+            if (_serverBuildsList != null)
+            {
+                _serverBuildsList.SetBuilds(source);
+            }
+
+            if (_clientBuildsList != null)
+            {
+                _clientBuildsList.SetBuilds(source);
+            }
         }
 
         private void OnGenerateBuildsClicked()
@@ -98,8 +127,8 @@ namespace SGUnitySDK.Editor.Presentation.Elements
                     throw new InvalidOperationException("Cannot generate builds: current development step is not 'Development'.");
                 }
 
-                var entries = _viewModel.GenerateBuilds();
-                SetBuilds(entries);
+                _viewModel.GenerateBuilds();
+                RefreshBuildSections();
 
                 EditorUtility.DisplayDialog("Generate Builds", "Build generation completed. Use the upload buttons to upload each build.", "OK");
             }
@@ -118,7 +147,22 @@ namespace SGUnitySDK.Editor.Presentation.Elements
         {
             if (step == DevelopmentStep.Development)
             {
-                SetBuilds(_processState.GetVersionBuildsOrEmpty());
+                RefreshBuildSections();
+            }
+        }
+
+        private void RefreshBuildSections()
+        {
+            if (_serverBuildsList != null)
+            {
+                _serverBuildsList.SetBuilds(
+                    _processState.GetServerVersionBuildsOrEmpty());
+            }
+
+            if (_clientBuildsList != null)
+            {
+                _clientBuildsList.SetBuilds(
+                    _processState.GetClientVersionBuildsOrEmpty());
             }
         }
     }

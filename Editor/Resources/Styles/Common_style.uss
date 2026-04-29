@@ -12,7 +12,6 @@
     border-bottom-width: 1px;
     border-bottom-left-radius: 0px;
     border-bottom-right-radius: 0px;
-    border-bottom-style: solid;
     padding-bottom: 5px;
     margin-bottom: 10px;
 }
@@ -21,7 +20,6 @@
     -unity-font-style: bold;
     border-bottom-color: rgba(113, 113, 113, 0.66);
     border-bottom-width: 0px;
-    border-bottom-style: solid;
     padding-bottom: 0px;
     margin-bottom: 10px;
     border-top-width: 0px;
@@ -30,6 +28,46 @@
     padding-top: 0px;
     padding-right: 0px;
     padding-left: 0px;
+}
+
+.build-setups-section {
+    flex-direction: column;
+    margin-bottom: 12px;
+}
+
+.build-setup-card {
+    flex-direction: column;
+    padding: 8px;
+    margin-bottom: 10px;
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.build-setup-card-header {
+    flex-direction: column;
+    margin-bottom: 6px;
+    padding-bottom: 6px;
+    border-bottom-width: 1px;
+    border-bottom-color: rgba(113, 113, 113, 0.45);
+}
+
+.build-setup-card-title {
+    -unity-font-style: bold;
+    font-size: 12px;
+    margin-bottom: 2px;
+}
+
+.build-setup-card-hint {
+    color: rgb(153, 153, 153);
+    font-size: 11px;
+    white-space: normal;
+}
+
+.build-setup-card-list {
+    min-height: 56px;
+}
+
+.build-output-section {
+    margin-top: 8px;
 }
 
 .bordered-box {
@@ -47,11 +85,6 @@
     border-top-right-radius: 5px;
     border-bottom-right-radius: 5px;
     border-bottom-left-radius: 5px;
-
-    border-top-style: solid;
-    border-right-style: solid;
-    border-bottom-style: solid;
-    border-left-style: solid;
 }
 
 .horizontal-field > Label {
@@ -95,7 +128,6 @@
 
     /* border-left: 3px solid ... (unsupported shorthand) */
     border-left-width: 3px;
-    border-left-style: solid;
     border-left-color: rgb(99, 13, 13);
 
     border-radius: 2px;
@@ -126,7 +158,6 @@
 
     /* border-bottom: 1px solid rgb(68,68,68) */
     border-bottom-width: 1px;
-    border-bottom-style: solid;
     border-bottom-color: rgb(68, 68, 68);
 }
 
@@ -181,7 +212,6 @@
     color: rgb(153, 153, 153);
     font-size: 12px;    
     white-space: normal; /* allow wrapping */
-    word-break: break-word; /* for very long URLs */
 }
 
 .build-error {
@@ -192,7 +222,7 @@
 
 .empty-builds-label {
     color: rgb(153, 153, 153);
-    -unity-text-align: center;
+    -unity-text-align: middle-center;
     padding: 16px;
 }
 
@@ -228,11 +258,6 @@
     border-bottom-width: 1px;
     border-left-width: 1px;
 
-    border-top-style: solid;
-    border-right-style: solid;
-    border-bottom-style: solid;
-    border-left-style: solid;
-
     border-top-left-radius: 5px;
     border-top-right-radius: 5px;
     border-bottom-right-radius: 5px;
@@ -257,6 +282,21 @@
 .unity-tab {
     flex-grow: 1;
     height: 100%;
+}
+
+#container-main #unity-tab-view__content-container {
+    flex-grow: 1;
+    min-height: 0;
+}
+
+#tab-config #unity-tab__content-container {
+    flex-grow: 1;
+    min-height: 0;
+}
+
+#tab-development #unity-tab__content-container {
+    flex-grow: 1;
+    min-height: 0;
 }
 
 #tab-view-runtime-panel #unity-tab-view__content-container {
@@ -311,5 +351,4 @@
     color: rgb(153, 153, 153);
     font-size: 12px;
     white-space: normal; /* allow wrapping */
-    word-break: break-word; /* for very long URLs */
 }

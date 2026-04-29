@@ -5,6 +5,7 @@ namespace SGUnitySDK.Editor.Core.Entities
     [System.Serializable]
     public struct SGLocalBuildResult
     {
+        public BuildType buildType;
         public bool success;
         public string productName;
         public string path;

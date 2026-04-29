@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using Newtonsoft.Json;
 using SGUnitySDK.Editor.Core.Entities;
+using UnityEngine.Serialization;
 
 namespace SGUnitySDK.Editor.Core.Singletons
 {
@@ -42,8 +43,11 @@ namespace SGUnitySDK.Editor.Core.Singletons
         [SerializeField]
         private long _homologationRequestUnixTimestamp = 0;
 
+        [SerializeField, FormerlySerializedAs("_versionBuilds")]
+        private List<SGVersionBuildEntry> _clientVersionBuilds = new();
+
         [SerializeField]
-        private List<SGVersionBuildEntry> _versionBuilds = new();
+        private List<SGVersionBuildEntry> _serverVersionBuilds = new();
 
         public event UnityAction<DevelopmentStep> StepChanged;
         public event UnityAction<SemVerType> TargetVersionDefined;
@@ -128,14 +132,48 @@ namespace SGUnitySDK.Editor.Core.Singletons
         }
 
         /// <summary>
-        /// Gets or sets the list of version build entries for the current process.
+        /// Gets or sets the list of generated client build entries.
+        /// </summary>
+        public List<SGVersionBuildEntry> ClientVersionBuilds
+        {
+            get => _clientVersionBuilds;
+            set
+            {
+                _clientVersionBuilds = value ?? new List<SGVersionBuildEntry>();
+                LocalBuildsChanged?.Invoke();
+                Persist();
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the list of generated server build entries.
+        /// </summary>
+        public List<SGVersionBuildEntry> ServerVersionBuilds
+        {
+            get => _serverVersionBuilds;
+            set
+            {
+                _serverVersionBuilds = value ?? new List<SGVersionBuildEntry>();
+                LocalBuildsChanged?.Invoke();
+                Persist();
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets all generated build entries, grouped internally by
+        /// build type while preserving a combined compatibility surface.
         /// </summary>
         public List<SGVersionBuildEntry> VersionBuilds
         {
-            get => _versionBuilds;
+            get => CombineVersionBuilds();
             set
             {
-                _versionBuilds = value ?? new List<SGVersionBuildEntry>();
+                SplitVersionBuildsByType(
+                    value,
+                    out var clientBuilds,
+                    out var serverBuilds);
+                _clientVersionBuilds = clientBuilds;
+                _serverVersionBuilds = serverBuilds;
                 LocalBuildsChanged?.Invoke();
                 Persist();
             }
@@ -178,7 +216,8 @@ namespace SGUnitySDK.Editor.Core.Singletons
         /// <param name="deleteFiles">If true, deletes the builds directory and its contents.</param>
         public void ClearVersionBuilds(bool deleteFiles = true)
         {
-            _versionBuilds.Clear();
+            _clientVersionBuilds.Clear();
+            _serverVersionBuilds.Clear();
             if (deleteFiles)
             {
                 string path = SGEditorConfig.instance.BuildsDirectory;
@@ -198,8 +237,29 @@ namespace SGUnitySDK.Editor.Core.Singletons
         /// <param name="entry">The new build entry to set.</param>
         public void ReplaceVersionBuild(int index, SGVersionBuildEntry entry)
         {
-            if (index < 0 || index >= _versionBuilds.Count) return;
-            _versionBuilds[index] = entry;
+            if (index < 0)
+            {
+                return;
+            }
+
+            int serverCount = _serverVersionBuilds?.Count ?? 0;
+            int clientCount = _clientVersionBuilds?.Count ?? 0;
+
+            if (index < serverCount)
+            {
+                _serverVersionBuilds[index] = entry;
+            }
+            else
+            {
+                int clientIndex = index - serverCount;
+                if (clientIndex < 0 || clientIndex >= clientCount)
+                {
+                    return;
+                }
+
+                _clientVersionBuilds[clientIndex] = entry;
+            }
+
             LocalBuildsChanged?.Invoke();
             Persist();
         }
@@ -291,6 +351,49 @@ namespace SGUnitySDK.Editor.Core.Singletons
             _homologationRequestUnixTimestamp = 0;
             // Clear build entries and delete associated files when resetting the process.
             ClearVersionBuilds(true);
+        }
+
+        private List<SGVersionBuildEntry> CombineVersionBuilds()
+        {
+            var combined = new List<SGVersionBuildEntry>();
+
+            if (_serverVersionBuilds != null && _serverVersionBuilds.Count > 0)
+            {
+                combined.AddRange(_serverVersionBuilds);
+            }
+
+            if (_clientVersionBuilds != null && _clientVersionBuilds.Count > 0)
+            {
+                combined.AddRange(_clientVersionBuilds);
+            }
+
+            return combined;
+        }
+
+        private static void SplitVersionBuildsByType(
+            List<SGVersionBuildEntry> source,
+            out List<SGVersionBuildEntry> clientBuilds,
+            out List<SGVersionBuildEntry> serverBuilds)
+        {
+            clientBuilds = new List<SGVersionBuildEntry>();
+            serverBuilds = new List<SGVersionBuildEntry>();
+
+            if (source == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < source.Count; i++)
+            {
+                var entry = source[i];
+                if (entry.build.buildType == BuildType.Server)
+                {
+                    serverBuilds.Add(entry);
+                    continue;
+                }
+
+                clientBuilds.Add(entry);
+            }
         }
     }
 

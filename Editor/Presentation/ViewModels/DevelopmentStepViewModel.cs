@@ -125,7 +125,8 @@ namespace SGUnitySDK.Editor.Presentation.ViewModels
             var list = _processState.GetVersionBuildsOrEmpty();
             for (int i = 0; i < list.Count; i++)
             {
-                if (list[i].build.path == updated.build.path)
+                if (list[i].build.path == updated.build.path &&
+                    list[i].build.buildType == updated.build.buildType)
                 {
                     _processState.ReplaceVersionBuild(i, updated);
                     break;
@@ -151,7 +152,8 @@ namespace SGUnitySDK.Editor.Presentation.ViewModels
             {
                 for (int i = 0; i < currentBuilds.Count; i++)
                 {
-                    if (currentBuilds[i].build.path == res.build.path)
+                    if (currentBuilds[i].build.path == res.build.path &&
+                        currentBuilds[i].build.buildType == res.build.buildType)
                     {
                         _processState.ReplaceVersionBuild(i, res);
                         break;

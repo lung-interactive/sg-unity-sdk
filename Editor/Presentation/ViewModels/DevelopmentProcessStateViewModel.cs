@@ -135,6 +135,24 @@ namespace SGUnitySDK.Editor.Presentation.ViewModels
         }
 
         /// <summary>
+        /// Gets current server build entries, ensuring a non-null list.
+        /// </summary>
+        /// <returns>Current server build entries list.</returns>
+        public List<SGVersionBuildEntry> GetServerVersionBuildsOrEmpty()
+        {
+            return _process.ServerVersionBuilds ?? new List<SGVersionBuildEntry>();
+        }
+
+        /// <summary>
+        /// Gets current client build entries, ensuring a non-null list.
+        /// </summary>
+        /// <returns>Current client build entries list.</returns>
+        public List<SGVersionBuildEntry> GetClientVersionBuildsOrEmpty()
+        {
+            return _process.ClientVersionBuilds ?? new List<SGVersionBuildEntry>();
+        }
+
+        /// <summary>
         /// Checks whether all current builds are uploaded.
         /// </summary>
         /// <returns>True when there are builds and all are uploaded.</returns>

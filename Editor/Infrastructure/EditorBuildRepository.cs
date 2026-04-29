@@ -21,7 +21,8 @@ namespace SGUnitySDK.Editor.Infrastructure
 
             int existingIndex = entries.FindIndex(e =>
                 e.build.path == buildResult.path &&
-                e.build.platform == buildResult.platform);
+                e.build.platform == buildResult.platform &&
+                e.build.buildType == buildResult.buildType);
 
             if (existingIndex >= 0)
             {
